@@ -8,6 +8,8 @@ def create_app(config_name: str = "default") -> Flask:
 
     # Register blueprints
     from .routes.main import main_bp
+    from .routes.intelligence import intelligence_bp
     app.register_blueprint(main_bp)
+    app.register_blueprint(intelligence_bp)
 
     return app

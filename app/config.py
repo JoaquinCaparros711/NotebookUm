@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class BaseConfig:
@@ -18,6 +22,9 @@ class ProductionConfig(BaseConfig):
 class TestingConfig(BaseConfig):
     TESTING = True
     DEBUG = True
+    # Use real API keys from .env for integration tests
+    GEMMA_API_KEY = os.getenv("GEMMA_API_KEY")
+    GEMMA_API_URL = os.getenv("GEMMA_API_URL")
 
 
 config = {
