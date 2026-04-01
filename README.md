@@ -32,3 +32,13 @@ Se aplicará los seis primeros factores:
 ## Diagramas 
 ## Configuración de las tablas en base de datos
 ## Funcionalidad de la base de datos
+## Especificación Técnica (v1)
+•⁠  ⁠los endpoint deben de empezar con /api/v1/
+•⁠  ⁠deben crearse las siguentes tablas: Usuario, Historial de documentos subidos por usuarios, Historial de preguntas, Resumenes (los nombres de tablas en plural y en minuscula)
+•⁠  ⁠Cada tabla debe de tener su CRUD, 
+•⁠  ⁠Los usuarios envian los archivos al endpoint /api/v1/documento/upload con el metodo POST, debe de ser asincronico. El endpoint debe: Permite subir archivo, Extraer texto, Generar resumen y Guardar información. No debe de guardar el archiv
+•⁠  ⁠Los archivos validos deben ser contentType: application/pdf y deben ser validados en el servidor, si no son de pdf se mandara json un error 400
+•⁠  ⁠Los archivos no deben superar los 25MB, si superan ese tamaño se mandara json un error status code 400 utilizando rfc9457
+•⁠  ⁠El Usuarios debe de crearse un cuenta en POST /api/v1/users y se obtendra en GET /api/v1/users/{id}
+•⁠  ⁠El usuario obtendra el resumen en: GET /api/v1/summaries/document/{document_id}
+
