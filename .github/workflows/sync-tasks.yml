@@ -1,0 +1,62 @@
+name: Sync Issue Status → tasks.md
+
+on:
+  issues:
+    types: [closed, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update tasks.md checkbox
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_ACTION: ${{ github.event.action }}
+        run: |
+          python3 - <<'SCRIPT'
+          import os, re, glob
+
+          title = os.environ["ISSUE_TITLE"]
+          action = os.environ["ISSUE_ACTION"]
+
+          match = re.match(r"^\[(?P<id>T\d+)\]", title)
+          if not match:
+              print(f"No es una tarea (sin [TXXX]): {title}")
+              raise SystemExit(0)
+
+          task_id = match.group("id")
+          old = "- [ ]" if action == "closed" else "- [x]"
+          new = "- [x]" if action == "closed" else "- [ ]"
+
+          updated = False
+          for path in glob.glob("specs/*/tasks.md"):
+              text = open(path, encoding="utf-8").read()
+              pattern = rf"({re.escape(old)} {task_id}\b)"
+              result = re.sub(pattern, f"{new} {task_id}", text, count=1)
+              if result != text:
+                  open(path, "w", encoding="utf-8").write(result)
+                  print(f"✓ {task_id} → {'[x]' if action == 'closed' else '[ ]'} en {path}")
+                  updated = True
+
+          if not updated:
+              print(f"⚠ {task_id} no encontrado en ningún tasks.md")
+          SCRIPT
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "specs/*/tasks.md"
+          git diff --cached --quiet && echo "Sin cambios" && exit 0
+          TASK_ID=$(echo "$ISSUE_TITLE" | grep -oP '^\[T\d+\]' || echo "task")
+          ACTION=$( [ "$ISSUE_ACTION" = "closed" ] && echo "completada" || echo "reabierta" )
+          git commit -m "chore(tasks): $TASK_ID $ACTION"
+          git push
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_ACTION: ${{ github.event.action }}
