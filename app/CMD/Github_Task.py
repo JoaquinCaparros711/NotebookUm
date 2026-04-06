@@ -3,23 +3,29 @@ import argparse, json, os, re, subprocess, tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-_PHASE_RE = re.compile(r"^##\s+Phase\s+(?P<num>\d+):\s*(?P<rest>.+)$", re.I)
-_PRIORITY_RE = re.compile(r"\(Priority:\s*(?P<p>P\d+)\)")
+_PHASE_RE = re.compile(r"^##\s+(?:Phase|Fase)\s+(?P<num>\d+):\s*(?P<rest>.+)$", re.I)
+_PRIORITY_RE = re.compile(r"\((?:Priority|Prioridad):\s*(?P<p>P\d+)\)")
 _TASK_RE = re.compile(r"^-\s+\[[ x]\]\s+(?P<id>T\d+)\s+(?P<rest>.+)$")
 _STORY_TAG = re.compile(r"\[US(?P<n>\d+)\]")
 _PARALLEL_TAG = re.compile(r"\[P\]")
 
 _LABEL_COLORS: dict[str, tuple[str, str]] = {
     "p1": ("d73a4a", "Prioridad crítica"), "p2": ("e4a435", "Prioridad media"),
-    "p3": ("0075ca", "Prioridad baja"), "user-story": ("7057ff", "Historia de usuario"),
+    "p3": ("0075ca", "Prioridad baja"), "historia-de-usuario": ("7057ff", "Historia de usuario"),
     "high": ("b60205", "Dificultad alta"), "medium": ("fbca04", "Dificultad media"),
-    "low": ("0e8a16", "Dificultad baja"), "parallel": ("c5def5", "Puede correr en paralelo"),
-    "setup": ("bfd4f2", "Setup"), "foundational": ("d4c5f9", "Foundational"),
-    "implementation": ("1d76db", "Implementación"), "test": ("e99695", "Test/TDD"),
-    "polish": ("f9d0c4", "Polish & Cross-Cutting"),
+    "low": ("0e8a16", "Dificultad baja"), "paralelo": ("c5def5", "Puede correr en paralelo"),
+    "configuración": ("bfd4f2", "Configuración inicial"), "base": ("d4c5f9", "Infraestructura base"),
+    "implementación": ("1d76db", "Implementación"), "prueba": ("e99695", "Prueba/TDD"),
+    "mejoras": ("f9d0c4", "Mejoras y optimización"),
 }
 _DIFF = {"P1": "high", "P2": "medium", "P3": "low"}
-_PHASE_LABEL = {1: "setup", 2: "foundational", 6: "polish"}
+_PHASE_LABEL: dict[int, str] = {1: "configuración", 2: "base"}
+_TITLE_ES: dict[str, str] = {
+    "Setup": "Configuración", "Shared Infrastructure": "Infraestructura Compartida",
+    "Foundational": "Base", "Blocking Prerequisites": "Prerrequisitos Bloqueantes",
+    "Polish & Cross-Cutting Concerns": "Mejoras y Aspectos Transversales",
+    "User Story": "Historia de Usuario",
+}
 
 
 @dataclass(slots=True)
@@ -52,6 +58,8 @@ def parse_tasks_md(text: str) -> list[Phase]:
             rest = pm.group("rest")
             pri_m = _PRIORITY_RE.search(rest)
             title = _PRIORITY_RE.sub("", rest).strip().rstrip("🎯 MVP").strip()
+            for eng, esp in _TITLE_ES.items():
+                title = title.replace(eng, esp)
             current = Phase(number=int(pm.group("num")), title=title,
                             priority=pri_m.group("p") if pri_m else None)
             phases.append(current)
@@ -62,7 +70,7 @@ def parse_tasks_md(text: str) -> list[Phase]:
             continue
 
         s = line.strip()
-        if in_purpose and s.startswith("**Purpose**:"):
+        if in_purpose and (s.startswith("**Purpose**:") or s.startswith("**Propósito**:")):
             current.purpose = s.split(":", 1)[1].strip()
             in_purpose = False
             continue
@@ -170,16 +178,17 @@ def sync(spec_dir: Path, repo: str, project_owner: str | None = None,
                  "priority": p.priority} for p in phases] + [{"total_issues": total_tasks + len(phases)}]
 
     get_or_create_milestone(repo, feature)
-    all_labels: set[str] = {"parallel"}
+    last_phase = max(p.number for p in phases)
+    all_labels: set[str] = {"paralelo"}
     for p in phases:
-        all_labels.add(_PHASE_LABEL.get(p.number, "implementation"))
+        all_labels.add(_PHASE_LABEL.get(p.number, "mejoras" if p.number == last_phase else "implementación"))
         if p.priority:
             all_labels |= {p.priority.lower(), _DIFF.get(p.priority, "medium")}
         for t in p.tasks:
             if t.story:
-                all_labels.add("user-story")
+                all_labels.add("historia-de-usuario")
             if t.is_test:
-                all_labels.add("test")
+                all_labels.add("prueba")
     ensure_labels(repo, all_labels)
 
     existing = {i["title"] for i in json.loads(
@@ -188,12 +197,12 @@ def sync(spec_dir: Path, repo: str, project_owner: str | None = None,
     results: list[dict] = []
 
     for phase in phases:
-        phase_title = f"[Phase {phase.number}] {phase.title}"
+        phase_title = f"[Fase {phase.number}] {phase.title}"
         if phase_title in existing:
             parent_url = ""
             results.append({"title": phase_title, "action": "existing"})
         else:
-            phase_labels = [_PHASE_LABEL.get(phase.number, "implementation")]
+            phase_labels = [_PHASE_LABEL.get(phase.number, "mejoras" if phase.number == last_phase else "implementación")]
             if phase.priority:
                 phase_labels += [phase.priority.lower(), _DIFF.get(phase.priority, "medium")]
             parent = create_issue(repo, phase_title, build_phase_body(phase, feature), phase_labels, feature)
@@ -207,13 +216,13 @@ def sync(spec_dir: Path, repo: str, project_owner: str | None = None,
             if title in existing:
                 results.append({"title": title, "action": "existing"})
                 continue
-            labels = [_PHASE_LABEL.get(phase.number, "implementation")]
+            labels = [_PHASE_LABEL.get(phase.number, "mejoras" if phase.number == last_phase else "implementación")]
             if task.story:
-                labels.append("user-story")
+                labels.append("historia-de-usuario")
             if task.is_test:
-                labels.append("test")
+                labels.append("prueba")
             if task.parallel:
-                labels.append("parallel")
+                labels.append("paralelo")
             if phase.priority:
                 labels += [phase.priority.lower(), _DIFF.get(phase.priority, "medium")]
             issue = create_issue(repo, title, build_task_body(task, phase, feature, parent_url), labels, feature)
@@ -226,7 +235,7 @@ def sync(spec_dir: Path, repo: str, project_owner: str | None = None,
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="Sincroniza tasks.md → GitHub Issues + Labels + Milestone + Project.")
+    p = argparse.ArgumentParser(description="Sincroniza tasks.md → Issues de GitHub + Etiquetas + Hito + Proyecto.")
     p.add_argument("spec_dir", help="Directorio de la feature (contiene tasks.md)")
     p.add_argument("--repo", default=os.getenv("GITHUB_REPOSITORY"), help="owner/repo")
     p.add_argument("--project-owner", default=os.getenv("GITHUB_PROJECT_OWNER"))

@@ -1,412 +1,412 @@
-# Tasks: Sistema de API para Gestión de Documentos
+# Tareas: Sistema de API para Gestión de Documentos
 
-**Input**: Design documents from `/specs/001-api-gestion-documentos/`
-**Prerequisites**: plan.md, spec.md, research.md
+**Entrada**: Documentos de diseño en `/specs/001-api-gestion-documentos/`
+**Prerrequisitos**: plan.md, spec.md, research.md
 
-**Tests**: TDD is mandatory per constitution - all test tasks are REQUIRED and must be written BEFORE implementation.
+**Pruebas**: TDD es obligatorio según la constitución - todas las tareas de prueba son REQUERIDAS y deben escribirse ANTES de la implementación.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organización**: Las tareas están agrupadas por historia de usuario para permitir la implementación y prueba independiente de cada historia.
 
-## Format: `[ID] [P?] [Story] Description`
+## Formato: `[ID] [P?] [Historia] Descripción`
 
-- **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- Include exact file paths in descriptions
+- **[P]**: Puede ejecutarse en paralelo (archivos diferentes, sin dependencias)
+- **[Historia]**: A qué historia de usuario pertenece la tarea (ej: US1, US2, US3)
+- Incluir rutas exactas de archivos en las descripciones
 
-## Path Conventions
+## Convenciones de Rutas
 
-All paths are relative to repository root (`/Users/josejoaquincaparros/Documents/Proyectos-Facultad/NotebookUm/`)
-
----
-
-## Phase 1: Setup (Shared Infrastructure)
-
-**Purpose**: Project initialization and basic structure
-
-- [ ] T001 Update pyproject.toml with all dependencies (Flask, SQLAlchemy, Flask-SQLAlchemy, mysql-connector-python, alembic, openai, docling, granian, celery, redis, python-dotenv, black, flake8, pylint, pytest, pytest-flask, pytest-cov, pytest-mock)
-- [ ] T002 Run `uv sync` to install all dependencies
-- [ ] T003 [P] Create .env.example with all required environment variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, OPENAI_API_KEY, CELERY_BROKER_URL, SECRET_KEY, MAX_UPLOAD_SIZE)
-- [ ] T004 [P] Configure black formatter in pyproject.toml (line-length=100, PEP 8 compliance)
-- [ ] T005 [P] Configure flake8 linter in .flake8 file
-- [ ] T006 [P] Configure pytest in pyproject.toml (testpaths, coverage settings)
-- [ ] T007 Create directory structure: app/models/, app/routes/, app/services/, app/utils/, tests/unit/, tests/integration/, tests/contract/, migrations/
+Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincaparros/Documents/Proyectos-Facultad/NotebookUm/`)
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Fase 1: Configuración (Infraestructura Compartida)
 
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+**Propósito**: Inicialización del proyecto y estructura básica
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
-
-- [ ] T008 Create app/config.py with BaseConfig, DevelopmentConfig, ProductionConfig, TestingConfig classes using dataclasses for DatabaseConfig and OpenAIConfig
-- [ ] T009 [P] Create app/database.py with SQLAlchemy initialization (db object, Base class)
-- [ ] T010 [P] Create app/utils/errors.py with RFC 9457 error response utilities (problem_details function for 400/404/500 errors)
-- [ ] T011 Update app/__init__.py with Flask app factory (create_app function) that initializes db, registers blueprints, and configures OpenAI client
-- [ ] T012 [P] Create app/utils/db.py with database session management utilities
-- [ ] T013 Initialize Alembic migrations in migrations/ directory
-- [ ] T014 Create main.py with Granian server entry point
-- [ ] T015 [P] Write unit tests for app/config.py in tests/unit/test_config.py (test environment variable loading)
-- [ ] T016 [P] Write unit tests for app/utils/errors.py in tests/unit/test_errors.py (test RFC 9457 format)
-
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+- [ ] T001 [#291](https://github.com/JoaquinCaparros711/NotebookUm/issues/291) Actualizar pyproject.toml con todas las dependencias (Flask, SQLAlchemy, Flask-SQLAlchemy, mysql-connector-python, alembic, openai, docling, granian, celery, redis, python-dotenv, black, flake8, pylint, pytest, pytest-flask, pytest-cov, pytest-mock)
+- [ ] T002 [#292](https://github.com/JoaquinCaparros711/NotebookUm/issues/292) Ejecutar `uv sync` para instalar todas las dependencias
+- [ ] T003 [#293](https://github.com/JoaquinCaparros711/NotebookUm/issues/293) [P] Crear .env.example con todas las variables de entorno requeridas (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, OPENAI_API_KEY, CELERY_BROKER_URL, SECRET_KEY, MAX_UPLOAD_SIZE)
+- [ ] T004 [#294](https://github.com/JoaquinCaparros711/NotebookUm/issues/294) [P] Configurar formateador black en pyproject.toml (line-length=100, cumplimiento PEP 8)
+- [ ] T005 [#295](https://github.com/JoaquinCaparros711/NotebookUm/issues/295) [P] Configurar linter flake8 en archivo .flake8
+- [ ] T006 [#296](https://github.com/JoaquinCaparros711/NotebookUm/issues/296) [P] Configurar pytest en pyproject.toml (testpaths, configuración de cobertura)
+- [ ] T007 [#297](https://github.com/JoaquinCaparros711/NotebookUm/issues/297) Crear estructura de directorios: app/models/, app/routes/, app/services/, app/utils/, tests/unit/, tests/integration/, tests/contract/, migrations/
 
 ---
 
-## Phase 3: User Story 1 - Creación de Cuenta de Usuario (Priority: P1) 🎯 MVP
+## Fase 2: Base (Prerrequisitos Bloqueantes)
 
-**Goal**: Permitir a nuevos usuarios crear cuentas y consultar su información de perfil
+**Propósito**: Infraestructura central que DEBE completarse antes de que CUALQUIER historia de usuario pueda implementarse
 
-**Independent Test**: 
+**⚠️ CRÍTICO**: No se puede comenzar trabajo de historias de usuario hasta que esta fase esté completa
+
+- [ ] T008 [#299](https://github.com/JoaquinCaparros711/NotebookUm/issues/299) Crear app/config.py con clases BaseConfig, DevelopmentConfig, ProductionConfig, TestingConfig usando dataclasses para DatabaseConfig y OpenAIConfig
+- [ ] T009 [#300](https://github.com/JoaquinCaparros711/NotebookUm/issues/300) [P] Crear app/database.py con inicialización de SQLAlchemy (objeto db, clase Base)
+- [ ] T010 [#301](https://github.com/JoaquinCaparros711/NotebookUm/issues/301) [P] Crear app/utils/errors.py con utilidades de respuesta de error RFC 9457 (función problem_details para errores 400/404/500)
+- [ ] T011 [#302](https://github.com/JoaquinCaparros711/NotebookUm/issues/302) Actualizar app/__init__.py con fábrica de aplicación Flask (función create_app) que inicializa db, registra blueprints y configura cliente OpenAI
+- [ ] T012 [#303](https://github.com/JoaquinCaparros711/NotebookUm/issues/303) [P] Crear app/utils/db.py con utilidades de gestión de sesión de base de datos
+- [ ] T013 [#304](https://github.com/JoaquinCaparros711/NotebookUm/issues/304) Inicializar migraciones Alembic en directorio migrations/
+- [ ] T014 [#305](https://github.com/JoaquinCaparros711/NotebookUm/issues/305) Crear main.py con punto de entrada del servidor Granian
+- [ ] T015 [#306](https://github.com/JoaquinCaparros711/NotebookUm/issues/306) [P] Escribir pruebas unitarias para app/config.py en tests/unit/test_config.py (probar carga de variables de entorno)
+- [ ] T016 [#307](https://github.com/JoaquinCaparros711/NotebookUm/issues/307) [P] Escribir pruebas unitarias para app/utils/errors.py en tests/unit/test_errors.py (probar formato RFC 9457)
+
+**Punto de control**: Base lista - la implementación de historias de usuario puede comenzar en paralelo
+
+---
+
+## Fase 3: Historia de Usuario 1 - Creación de Cuenta de Usuario (Prioridad: P1) 🎯 MVP
+
+**Objetivo**: Permitir a nuevos usuarios crear cuentas y consultar su información de perfil
+
+**Prueba Independiente**:
 - Crear usuario vía POST /api/v1/users
 - Consultar usuario vía GET /api/v1/users/{id}
 - Validar que datos inválidos devuelven error descriptivo
 
-### Tests for User Story 1 (TDD - WRITE FIRST, ENSURE THEY FAIL)
+### Pruebas para Historia de Usuario 1 (TDD - ESCRIBIR PRIMERO, ASEGURAR QUE FALLEN)
 
-- [ ] T017 [P] [US1] Write contract test for POST /api/v1/users in tests/contract/test_users_api.py (test successful creation, test validation errors, test duplicate email)
-- [ ] T018 [P] [US1] Write contract test for GET /api/v1/users/{id} in tests/contract/test_users_api.py (test successful retrieval, test 404 for non-existent user)
-- [ ] T019 [P] [US1] Write unit test for Usuario model in tests/unit/test_models.py (test model creation, test email uniqueness constraint, test timestamps)
+- [ ] T017 [#309](https://github.com/JoaquinCaparros711/NotebookUm/issues/309) [P] [US1] Escribir prueba de contrato para POST /api/v1/users en tests/contract/test_users_api.py (probar creación exitosa, probar errores de validación, probar email duplicado)
+- [ ] T018 [#310](https://github.com/JoaquinCaparros711/NotebookUm/issues/310) [P] [US1] Escribir prueba de contrato para GET /api/v1/users/{id} en tests/contract/test_users_api.py (probar recuperación exitosa, probar 404 para usuario inexistente)
+- [ ] T019 [#311](https://github.com/JoaquinCaparros711/NotebookUm/issues/311) [P] [US1] Escribir prueba unitaria para modelo Usuario en tests/unit/test_models.py (probar creación del modelo, probar restricción de unicidad de email, probar timestamps)
 
-### Implementation for User Story 1
+### Implementación para Historia de Usuario 1
 
-- [ ] T020 [US1] Create Usuario model in app/models/user.py (id, email, nombre, created_at, updated_at with relationships to documentos and preguntas)
-- [ ] T021 [US1] Create Alembic migration for usuarios table
-- [ ] T022 [US1] Run migration: `uv run alembic upgrade head`
-- [ ] T023 [US1] Create UserService in app/services/user_service.py (create_user, get_user_by_id, validate_user_data methods)
-- [ ] T024 [US1] Write unit tests for UserService in tests/unit/test_services.py (test create_user, test get_user_by_id with mocked db)
-- [ ] T025 [US1] Create users blueprint in app/routes/users.py with POST /api/v1/users endpoint (validate input, call UserService, return JSON with user ID)
-- [ ] T026 [US1] Add GET /api/v1/users/{id} endpoint to app/routes/users.py (call UserService, return user data or 404)
-- [ ] T027 [US1] Register users blueprint in app/__init__.py
-- [ ] T028 [US1] Add input validation for user creation (email format, required fields) in app/routes/users.py
-- [ ] T029 [US1] Add error handling with RFC 9457 format for user endpoints
-- [ ] T030 [US1] Run all User Story 1 tests: `uv run pytest tests/contract/test_users_api.py tests/unit/test_models.py -v`
+- [ ] T020 [#312](https://github.com/JoaquinCaparros711/NotebookUm/issues/312) [US1] Crear modelo Usuario en app/models/user.py (id, email, nombre, created_at, updated_at con relaciones a documentos y preguntas)
+- [ ] T021 [#313](https://github.com/JoaquinCaparros711/NotebookUm/issues/313) [US1] Crear migración Alembic para tabla usuarios
+- [ ] T022 [#314](https://github.com/JoaquinCaparros711/NotebookUm/issues/314) [US1] Ejecutar migración: `uv run alembic upgrade head`
+- [ ] T023 [#315](https://github.com/JoaquinCaparros711/NotebookUm/issues/315) [US1] Crear UserService en app/services/user_service.py (métodos create_user, get_user_by_id, validate_user_data)
+- [ ] T024 [#316](https://github.com/JoaquinCaparros711/NotebookUm/issues/316) [US1] Escribir pruebas unitarias para UserService en tests/unit/test_services.py (probar create_user, probar get_user_by_id con db mockeada)
+- [ ] T025 [#317](https://github.com/JoaquinCaparros711/NotebookUm/issues/317) [US1] Crear blueprint de usuarios en app/routes/users.py con endpoint POST /api/v1/users (validar entrada, llamar UserService, retornar JSON con ID de usuario)
+- [ ] T026 [#318](https://github.com/JoaquinCaparros711/NotebookUm/issues/318) [US1] Agregar endpoint GET /api/v1/users/{id} a app/routes/users.py (llamar UserService, retornar datos de usuario o 404)
+- [ ] T027 [#319](https://github.com/JoaquinCaparros711/NotebookUm/issues/319) [US1] Registrar blueprint de usuarios en app/__init__.py
+- [ ] T028 [#320](https://github.com/JoaquinCaparros711/NotebookUm/issues/320) [US1] Agregar validación de entrada para creación de usuario (formato de email, campos requeridos) en app/routes/users.py
+- [ ] T029 [#321](https://github.com/JoaquinCaparros711/NotebookUm/issues/321) [US1] Agregar manejo de errores con formato RFC 9457 para endpoints de usuario
+- [ ] T030 [#322](https://github.com/JoaquinCaparros711/NotebookUm/issues/322) [US1] Ejecutar todas las pruebas de Historia de Usuario 1: `uv run pytest tests/contract/test_users_api.py tests/unit/test_models.py -v`
 
-**Checkpoint**: At this point, User Story 1 should be fully functional - users can create accounts and retrieve their information
+**Punto de control**: En este punto, la Historia de Usuario 1 debería ser completamente funcional - los usuarios pueden crear cuentas y recuperar su información
 
 ---
 
-## Phase 4: User Story 2 - Carga y Procesamiento de Documentos PDF (Priority: P1)
+## Fase 4: Historia de Usuario 2 - Carga y Procesamiento de Documentos PDF (Prioridad: P1)
 
-**Goal**: Permitir a usuarios cargar PDFs, extraer texto automáticamente, generar resúmenes vía IA, y consultar estado de procesamiento
+**Objetivo**: Permitir a usuarios cargar PDFs, extraer texto automáticamente, generar resúmenes vía IA, y consultar estado de procesamiento
 
-**Independent Test**:
+**Prueba Independiente**:
 - Cargar PDF válido <25MB vía POST /api/v1/documento/upload
 - Rechazar archivos no-PDF con error 400
 - Rechazar archivos >25MB con error 400 RFC 9457
 - Verificar procesamiento asíncrono (respuesta inmediata)
 - Consultar estado de procesamiento
 
-### Tests for User Story 2 (TDD - WRITE FIRST, ENSURE THEY FAIL)
+### Pruebas para Historia de Usuario 2 (TDD - ESCRIBIR PRIMERO, ASEGURAR QUE FALLEN)
 
-- [ ] T031 [P] [US2] Write contract test for POST /api/v1/documento/upload in tests/contract/test_documents_api.py (test valid PDF upload, test non-PDF rejection, test >25MB rejection, test async confirmation)
-- [ ] T032 [P] [US2] Write integration test for PDF extraction in tests/integration/test_pdf_extraction.py (test Docling extracts text from sample PDF, test error handling for corrupted PDF)
-- [ ] T033 [P] [US2] Write integration test for summary generation in tests/integration/test_summary_generation.py (test OpenAI generates summary from text, test hierarchical summarization for long text, test Spanish/English support)
-- [ ] T034 [P] [US2] Write integration test for async processing in tests/integration/test_async_processing.py (test Celery task execution, test status updates in database)
-- [ ] T035 [P] [US2] Write unit test for file validation in tests/unit/test_validation.py (test PDF content-type check, test file size check, test error messages)
+- [ ] T031 [#324](https://github.com/JoaquinCaparros711/NotebookUm/issues/324) [P] [US2] Escribir prueba de contrato para POST /api/v1/documento/upload en tests/contract/test_documents_api.py (probar carga de PDF válido, probar rechazo de no-PDF, probar rechazo >25MB, probar confirmación asíncrona)
+- [ ] T032 [#325](https://github.com/JoaquinCaparros711/NotebookUm/issues/325) [P] [US2] Escribir prueba de integración para extracción de PDF en tests/integration/test_pdf_extraction.py (probar que Docling extrae texto de PDF de muestra, probar manejo de errores para PDF corrupto)
+- [ ] T033 [#326](https://github.com/JoaquinCaparros711/NotebookUm/issues/326) [P] [US2] Escribir prueba de integración para generación de resumen en tests/integration/test_summary_generation.py (probar que OpenAI genera resumen del texto, probar resumen jerárquico para texto largo, probar soporte español/inglés)
+- [ ] T034 [#327](https://github.com/JoaquinCaparros711/NotebookUm/issues/327) [P] [US2] Escribir prueba de integración para procesamiento asíncrono en tests/integration/test_async_processing.py (probar ejecución de tarea Celery, probar actualizaciones de estado en base de datos)
+- [ ] T035 [#328](https://github.com/JoaquinCaparros711/NotebookUm/issues/328) [P] [US2] Escribir prueba unitaria para validación de archivos en tests/unit/test_validation.py (probar verificación de content-type PDF, probar verificación de tamaño, probar mensajes de error)
 
-### Implementation for User Story 2
+### Implementación para Historia de Usuario 2
 
-- [ ] T036 [P] [US2] Create HistorialDocumento model in app/models/document.py (id, usuario_id, nombre_archivo, extracto_texto, tamanio_bytes, estado, created_at with relationships to usuario and resumenes)
-- [ ] T037 [P] [US2] Create Resumen model in app/models/summary.py (id, documento_id, contenido, modelo_utilizado, created_at with relationship to documento)
-- [ ] T038 [US2] Create Alembic migration for historial_documentos and resumenes tables
-- [ ] T039 [US2] Run migration: `uv run alembic upgrade head`
-- [ ] T040 [US2] Create app/services/validation.py with file validation functions (validate_pdf_content_type, validate_file_size, create_rfc9457_error)
-- [ ] T041 [US2] Create app/services/pdf_service.py with Docling integration (extract_text_from_pdf function with error handling for corrupted files)
-- [ ] T042 [US2] Create app/services/summary_service.py with OpenAI integration (initialize_openai_client, detect_language, summarize_text, hierarchical_summarize for long texts with retry logic)
-- [ ] T043 [US2] Setup Celery in app/services/async_tasks.py (configure broker, create process_document_task that calls pdf_service and summary_service)
-- [ ] T044 [US2] Create documents blueprint in app/routes/documents.py with POST /api/v1/documento/upload endpoint (validate file, save metadata, enqueue async task, return processing status)
-- [ ] T045 [US2] Add GET /api/v1/documento/{document_id}/status endpoint to check processing status
-- [ ] T046 [US2] Register documents blueprint in app/__init__.py
-- [ ] T047 [US2] Add comprehensive error handling for upload endpoint (non-PDF error, size limit error with RFC 9457, processing errors)
-- [ ] T048 [US2] Update HistorialDocumento model with estado field (pending, processing, completed, failed)
-- [ ] T049 [US2] Update async task to update estado field throughout processing lifecycle
-- [ ] T050 [US2] Run all User Story 2 tests: `uv run pytest tests/contract/test_documents_api.py tests/integration/ -v`
+- [ ] T036 [#329](https://github.com/JoaquinCaparros711/NotebookUm/issues/329) [P] [US2] Crear modelo HistorialDocumento en app/models/document.py (id, usuario_id, nombre_archivo, extracto_texto, tamanio_bytes, estado, created_at con relaciones a usuario y resúmenes)
+- [ ] T037 [#330](https://github.com/JoaquinCaparros711/NotebookUm/issues/330) [P] [US2] Crear modelo Resumen en app/models/summary.py (id, documento_id, contenido, modelo_utilizado, created_at con relación a documento)
+- [ ] T038 [#331](https://github.com/JoaquinCaparros711/NotebookUm/issues/331) [US2] Crear migración Alembic para tablas historial_documentos y resumenes
+- [ ] T039 [#332](https://github.com/JoaquinCaparros711/NotebookUm/issues/332) [US2] Ejecutar migración: `uv run alembic upgrade head`
+- [ ] T040 [#333](https://github.com/JoaquinCaparros711/NotebookUm/issues/333) [US2] Crear app/services/validation.py con funciones de validación de archivos (validate_pdf_content_type, validate_file_size, create_rfc9457_error)
+- [ ] T041 [#334](https://github.com/JoaquinCaparros711/NotebookUm/issues/334) [US2] Crear app/services/pdf_service.py con integración Docling (función extract_text_from_pdf con manejo de errores para archivos corruptos)
+- [ ] T042 [#335](https://github.com/JoaquinCaparros711/NotebookUm/issues/335) [US2] Crear app/services/summary_service.py con integración OpenAI (initialize_openai_client, detect_language, summarize_text, hierarchical_summarize para textos largos con lógica de reintento)
+- [ ] T043 [#336](https://github.com/JoaquinCaparros711/NotebookUm/issues/336) [US2] Configurar Celery en app/services/async_tasks.py (configurar broker, crear process_document_task que llama a pdf_service y summary_service)
+- [ ] T044 [#337](https://github.com/JoaquinCaparros711/NotebookUm/issues/337) [US2] Crear blueprint de documentos en app/routes/documents.py con endpoint POST /api/v1/documento/upload (validar archivo, guardar metadata, encolar tarea asíncrona, retornar estado de procesamiento)
+- [ ] T045 [#338](https://github.com/JoaquinCaparros711/NotebookUm/issues/338) [US2] Agregar endpoint GET /api/v1/documento/{document_id}/status para consultar estado de procesamiento
+- [ ] T046 [#339](https://github.com/JoaquinCaparros711/NotebookUm/issues/339) [US2] Registrar blueprint de documentos en app/__init__.py
+- [ ] T047 [#340](https://github.com/JoaquinCaparros711/NotebookUm/issues/340) [US2] Agregar manejo integral de errores para endpoint de carga (error no-PDF, error de límite de tamaño con RFC 9457, errores de procesamiento)
+- [ ] T048 [#341](https://github.com/JoaquinCaparros711/NotebookUm/issues/341) [US2] Actualizar modelo HistorialDocumento con campo estado (pending, processing, completed, failed)
+- [ ] T049 [#342](https://github.com/JoaquinCaparros711/NotebookUm/issues/342) [US2] Actualizar tarea asíncrona para actualizar campo estado durante el ciclo de vida del procesamiento
+- [ ] T050 [#343](https://github.com/JoaquinCaparros711/NotebookUm/issues/343) [US2] Ejecutar todas las pruebas de Historia de Usuario 2: `uv run pytest tests/contract/test_documents_api.py tests/integration/ -v`
 
-**Checkpoint**: At this point, User Story 2 should be fully functional - users can upload PDFs and system processes them asynchronously
+**Punto de control**: En este punto, la Historia de Usuario 2 debería ser completamente funcional - los usuarios pueden cargar PDFs y el sistema los procesa asincrónicamente
 
 ---
 
-## Phase 5: User Story 3 - Consulta de Resúmenes Generados (Priority: P2)
+## Fase 5: Historia de Usuario 3 - Consulta de Resúmenes Generados (Prioridad: P2)
 
-**Goal**: Permitir a usuarios consultar resúmenes de documentos previamente procesados
+**Objetivo**: Permitir a usuarios consultar resúmenes de documentos previamente procesados
 
-**Independent Test**:
+**Prueba Independiente**:
 - Consultar resumen vía GET /api/v1/summaries/document/{document_id}
 - Verificar 404 para documento inexistente
 - Verificar mensaje apropiado para documento en procesamiento
 - Validar que solo el dueño puede acceder al resumen
 
-### Tests for User Story 3 (TDD - WRITE FIRST, ENSURE THEY FAIL)
+### Pruebas para Historia de Usuario 3 (TDD - ESCRIBIR PRIMERO, ASEGURAR QUE FALLEN)
 
-- [ ] T051 [P] [US3] Write contract test for GET /api/v1/summaries/document/{document_id} in tests/contract/test_summaries_api.py (test successful retrieval, test 404 for non-existent document, test 403 for unauthorized access, test pending status for processing document)
-- [ ] T052 [P] [US3] Write integration test for summary retrieval in tests/integration/test_summary_retrieval.py (test complete flow: upload → process → retrieve summary)
+- [ ] T051 [#345](https://github.com/JoaquinCaparros711/NotebookUm/issues/345) [P] [US3] Escribir prueba de contrato para GET /api/v1/summaries/document/{document_id} en tests/contract/test_summaries_api.py (probar recuperación exitosa, probar 404 para documento inexistente, probar 403 para acceso no autorizado, probar estado pendiente para documento en procesamiento)
+- [ ] T052 [#346](https://github.com/JoaquinCaparros711/NotebookUm/issues/346) [P] [US3] Escribir prueba de integración para recuperación de resumen en tests/integration/test_summary_retrieval.py (probar flujo completo: cargar → procesar → recuperar resumen)
 
-### Implementation for User Story 3
+### Implementación para Historia de Usuario 3
 
-- [ ] T053 [US3] Create SummaryService in app/services/summary_service.py (get_summary_by_document_id, check_user_ownership methods)
-- [ ] T054 [US3] Write unit tests for SummaryService in tests/unit/test_services.py (test ownership validation, test retrieval with mocked db)
-- [ ] T055 [US3] Create summaries blueprint in app/routes/summaries.py with GET /api/v1/summaries/document/{document_id} endpoint (validate ownership, return summary or appropriate error)
-- [ ] T056 [US3] Register summaries blueprint in app/__init__.py
-- [ ] T057 [US3] Add authorization check to verify user owns the document before returning summary
-- [ ] T058 [US3] Add status-aware response (return "processing" message if estado is not "completed")
-- [ ] T059 [US3] Add comprehensive error handling (404 for not found, 403 for unauthorized, clear messaging for processing state)
-- [ ] T060 [US3] Run all User Story 3 tests: `uv run pytest tests/contract/test_summaries_api.py tests/integration/test_summary_retrieval.py -v`
+- [ ] T053 [#347](https://github.com/JoaquinCaparros711/NotebookUm/issues/347) [US3] Crear SummaryService en app/services/summary_service.py (métodos get_summary_by_document_id, check_user_ownership)
+- [ ] T054 [#348](https://github.com/JoaquinCaparros711/NotebookUm/issues/348) [US3] Escribir pruebas unitarias para SummaryService en tests/unit/test_services.py (probar validación de propiedad, probar recuperación con db mockeada)
+- [ ] T055 [#349](https://github.com/JoaquinCaparros711/NotebookUm/issues/349) [US3] Crear blueprint de resúmenes en app/routes/summaries.py con endpoint GET /api/v1/summaries/document/{document_id} (validar propiedad, retornar resumen o error apropiado)
+- [ ] T056 [#350](https://github.com/JoaquinCaparros711/NotebookUm/issues/350) [US3] Registrar blueprint de resúmenes en app/__init__.py
+- [ ] T057 [#351](https://github.com/JoaquinCaparros711/NotebookUm/issues/351) [US3] Agregar verificación de autorización para confirmar que el usuario es dueño del documento antes de retornar el resumen
+- [ ] T058 [#352](https://github.com/JoaquinCaparros711/NotebookUm/issues/352) [US3] Agregar respuesta consciente del estado (retornar mensaje "en procesamiento" si estado no es "completed")
+- [ ] T059 [#353](https://github.com/JoaquinCaparros711/NotebookUm/issues/353) [US3] Agregar manejo integral de errores (404 para no encontrado, 403 para no autorizado, mensajes claros para estado de procesamiento)
+- [ ] T060 [#354](https://github.com/JoaquinCaparros711/NotebookUm/issues/354) [US3] Ejecutar todas las pruebas de Historia de Usuario 3: `uv run pytest tests/contract/test_summaries_api.py tests/integration/test_summary_retrieval.py -v`
 
-**Checkpoint**: At this point, User Story 3 should be fully functional - users can retrieve summaries of their processed documents
+**Punto de control**: En este punto, la Historia de Usuario 3 debería ser completamente funcional - los usuarios pueden recuperar resúmenes de sus documentos procesados
 
 ---
 
-## Phase 6: User Story 4 - Gestión del Historial de Documentos (Priority: P3)
+## Fase 6: Historia de Usuario 4 - Gestión del Historial de Documentos (Prioridad: P3)
 
-**Goal**: Permitir CRUD completo sobre historial de documentos (listar, actualizar metadata, eliminar)
+**Objetivo**: Permitir CRUD completo sobre historial de documentos (listar, actualizar metadata, eliminar)
 
-**Independent Test**:
+**Prueba Independiente**:
 - GET /api/v1/documentos - listar todos los documentos del usuario
 - PATCH /api/v1/documento/{id} - actualizar metadata
 - DELETE /api/v1/documento/{id} - eliminar documento y sus resúmenes
 
-### Tests for User Story 4 (TDD - WRITE FIRST, ENSURE THEY FAIL)
+### Pruebas para Historia de Usuario 4 (TDD - ESCRIBIR PRIMERO, ASEGURAR QUE FALLEN)
 
-- [ ] T061 [P] [US4] Write contract test for GET /api/v1/documentos in tests/contract/test_documents_api.py (test list all user documents, test pagination if implemented, test empty list for new user)
-- [ ] T062 [P] [US4] Write contract test for PATCH /api/v1/documento/{id} in tests/contract/test_documents_api.py (test update metadata, test 404 for non-existent, test 403 for unauthorized)
-- [ ] T063 [P] [US4] Write contract test for DELETE /api/v1/documento/{id} in tests/contract/test_documents_api.py (test successful deletion, test cascade delete of summaries, test 404 for non-existent)
+- [ ] T061 [#356](https://github.com/JoaquinCaparros711/NotebookUm/issues/356) [P] [US4] Escribir prueba de contrato para GET /api/v1/documentos en tests/contract/test_documents_api.py (probar listar todos los documentos del usuario, probar paginación si está implementada, probar lista vacía para usuario nuevo)
+- [ ] T062 [#357](https://github.com/JoaquinCaparros711/NotebookUm/issues/357) [P] [US4] Escribir prueba de contrato para PATCH /api/v1/documento/{id} en tests/contract/test_documents_api.py (probar actualización de metadata, probar 404 para inexistente, probar 403 para no autorizado)
+- [ ] T063 [#358](https://github.com/JoaquinCaparros711/NotebookUm/issues/358) [P] [US4] Escribir prueba de contrato para DELETE /api/v1/documento/{id} en tests/contract/test_documents_api.py (probar eliminación exitosa, probar eliminación en cascada de resúmenes, probar 404 para inexistente)
 
-### Implementation for User Story 4
+### Implementación para Historia de Usuario 4
 
-- [ ] T064 [US4] Add GET /api/v1/documentos endpoint to app/routes/documents.py (return all documents for authenticated user with pagination support)
-- [ ] T065 [US4] Add PATCH /api/v1/documento/{id} endpoint to app/routes/documents.py (update document metadata, validate ownership)
-- [ ] T066 [US4] Add DELETE /api/v1/documento/{id} endpoint to app/routes/documents.py (delete document and cascade to summaries, validate ownership)
-- [ ] T067 [US4] Add DocumentService methods in app/services/document_service.py (list_user_documents, update_document, delete_document)
-- [ ] T068 [US4] Write unit tests for DocumentService in tests/unit/test_services.py
-- [ ] T069 [US4] Update Resumen model to ensure cascade delete when documento is deleted
-- [ ] T070 [US4] Add authorization checks for all CRUD operations
-- [ ] T071 [US4] Run all User Story 4 tests: `uv run pytest tests/contract/test_documents_api.py -k "US4" -v`
+- [ ] T064 [#359](https://github.com/JoaquinCaparros711/NotebookUm/issues/359) [US4] Agregar endpoint GET /api/v1/documentos a app/routes/documents.py (retornar todos los documentos del usuario autenticado con soporte de paginación)
+- [ ] T065 [#360](https://github.com/JoaquinCaparros711/NotebookUm/issues/360) [US4] Agregar endpoint PATCH /api/v1/documento/{id} a app/routes/documents.py (actualizar metadata del documento, validar propiedad)
+- [ ] T066 [#361](https://github.com/JoaquinCaparros711/NotebookUm/issues/361) [US4] Agregar endpoint DELETE /api/v1/documento/{id} a app/routes/documents.py (eliminar documento y cascadear a resúmenes, validar propiedad)
+- [ ] T067 [#362](https://github.com/JoaquinCaparros711/NotebookUm/issues/362) [US4] Agregar métodos a DocumentService en app/services/document_service.py (list_user_documents, update_document, delete_document)
+- [ ] T068 [#363](https://github.com/JoaquinCaparros711/NotebookUm/issues/363) [US4] Escribir pruebas unitarias para DocumentService en tests/unit/test_services.py
+- [ ] T069 [#364](https://github.com/JoaquinCaparros711/NotebookUm/issues/364) [US4] Actualizar modelo Resumen para asegurar eliminación en cascada cuando se elimina un documento
+- [ ] T070 [#365](https://github.com/JoaquinCaparros711/NotebookUm/issues/365) [US4] Agregar verificaciones de autorización para todas las operaciones CRUD
+- [ ] T071 [#366](https://github.com/JoaquinCaparros711/NotebookUm/issues/366) [US4] Ejecutar todas las pruebas de Historia de Usuario 4: `uv run pytest tests/contract/test_documents_api.py -k "US4" -v`
 
-**Checkpoint**: At this point, User Story 4 should be fully functional - users have full control over their document history
+**Punto de control**: En este punto, la Historia de Usuario 4 debería ser completamente funcional - los usuarios tienen control total sobre su historial de documentos
 
 ---
 
-## Phase 7: User Story 5 - Gestión del Historial de Preguntas (Priority: P3)
+## Fase 7: Historia de Usuario 5 - Gestión del Historial de Preguntas (Prioridad: P3)
 
-**Goal**: Permitir CRUD completo sobre historial de preguntas
+**Objetivo**: Permitir CRUD completo sobre historial de preguntas
 
-**Independent Test**:
+**Prueba Independiente**:
 - POST /api/v1/preguntas - crear nueva pregunta
 - GET /api/v1/preguntas - listar preguntas del usuario
 - PATCH /api/v1/pregunta/{id} - actualizar pregunta
 - DELETE /api/v1/pregunta/{id} - eliminar pregunta
 
-### Tests for User Story 5 (TDD - WRITE FIRST, ENSURE THEY FAIL)
+### Pruebas para Historia de Usuario 5 (TDD - ESCRIBIR PRIMERO, ASEGURAR QUE FALLEN)
 
-- [ ] T072 [P] [US5] Write contract test for POST /api/v1/preguntas in tests/contract/test_questions_api.py (test create question, test validation)
-- [ ] T073 [P] [US5] Write contract test for GET /api/v1/preguntas in tests/contract/test_questions_api.py (test list user questions, test filtering by document_id)
-- [ ] T074 [P] [US5] Write contract test for PATCH /api/v1/pregunta/{id} in tests/contract/test_questions_api.py (test update question/answer)
-- [ ] T075 [P] [US5] Write contract test for DELETE /api/v1/pregunta/{id} in tests/contract/test_questions_api.py (test delete question)
-- [ ] T076 [P] [US5] Write unit test for HistorialPregunta model in tests/unit/test_models.py
+- [ ] T072 [#368](https://github.com/JoaquinCaparros711/NotebookUm/issues/368) [P] [US5] Escribir prueba de contrato para POST /api/v1/preguntas en tests/contract/test_questions_api.py (probar creación de pregunta, probar validación)
+- [ ] T073 [#369](https://github.com/JoaquinCaparros711/NotebookUm/issues/369) [P] [US5] Escribir prueba de contrato para GET /api/v1/preguntas en tests/contract/test_questions_api.py (probar listar preguntas del usuario, probar filtrado por document_id)
+- [ ] T074 [#370](https://github.com/JoaquinCaparros711/NotebookUm/issues/370) [P] [US5] Escribir prueba de contrato para PATCH /api/v1/pregunta/{id} en tests/contract/test_questions_api.py (probar actualización de pregunta/respuesta)
+- [ ] T075 [#371](https://github.com/JoaquinCaparros711/NotebookUm/issues/371) [P] [US5] Escribir prueba de contrato para DELETE /api/v1/pregunta/{id} en tests/contract/test_questions_api.py (probar eliminación de pregunta)
+- [ ] T076 [#372](https://github.com/JoaquinCaparros711/NotebookUm/issues/372) [P] [US5] Escribir prueba unitaria para modelo HistorialPregunta en tests/unit/test_models.py
 
-### Implementation for User Story 5
+### Implementación para Historia de Usuario 5
 
-- [ ] T077 [US5] Create HistorialPregunta model in app/models/question.py (id, usuario_id, documento_id, pregunta, respuesta, created_at with relationships)
-- [ ] T078 [US5] Create Alembic migration for historial_preguntas table
-- [ ] T079 [US5] Run migration: `uv run alembic upgrade head`
-- [ ] T080 [US5] Create QuestionService in app/services/question_service.py (create, list, update, delete methods)
-- [ ] T081 [US5] Write unit tests for QuestionService in tests/unit/test_services.py
-- [ ] T082 [US5] Create questions blueprint in app/routes/questions.py with all CRUD endpoints
-- [ ] T083 [US5] Register questions blueprint in app/__init__.py
-- [ ] T084 [US5] Add authorization checks for all question operations
-- [ ] T085 [US5] Add validation for question creation (required fields)
-- [ ] T086 [US5] Run all User Story 5 tests: `uv run pytest tests/contract/test_questions_api.py -v`
+- [ ] T077 [#373](https://github.com/JoaquinCaparros711/NotebookUm/issues/373) [US5] Crear modelo HistorialPregunta en app/models/question.py (id, usuario_id, documento_id, pregunta, respuesta, created_at con relaciones)
+- [ ] T078 [#374](https://github.com/JoaquinCaparros711/NotebookUm/issues/374) [US5] Crear migración Alembic para tabla historial_preguntas
+- [ ] T079 [#375](https://github.com/JoaquinCaparros711/NotebookUm/issues/375) [US5] Ejecutar migración: `uv run alembic upgrade head`
+- [ ] T080 [#376](https://github.com/JoaquinCaparros711/NotebookUm/issues/376) [US5] Crear QuestionService en app/services/question_service.py (métodos crear, listar, actualizar, eliminar)
+- [ ] T081 [#377](https://github.com/JoaquinCaparros711/NotebookUm/issues/377) [US5] Escribir pruebas unitarias para QuestionService en tests/unit/test_services.py
+- [ ] T082 [#378](https://github.com/JoaquinCaparros711/NotebookUm/issues/378) [US5] Crear blueprint de preguntas en app/routes/questions.py con todos los endpoints CRUD
+- [ ] T083 [#379](https://github.com/JoaquinCaparros711/NotebookUm/issues/379) [US5] Registrar blueprint de preguntas en app/__init__.py
+- [ ] T084 [#380](https://github.com/JoaquinCaparros711/NotebookUm/issues/380) [US5] Agregar verificaciones de autorización para todas las operaciones de preguntas
+- [ ] T085 [#381](https://github.com/JoaquinCaparros711/NotebookUm/issues/381) [US5] Agregar validación para creación de preguntas (campos requeridos)
+- [ ] T086 [#382](https://github.com/JoaquinCaparros711/NotebookUm/issues/382) [US5] Ejecutar todas las pruebas de Historia de Usuario 5: `uv run pytest tests/contract/test_questions_api.py -v`
 
-**Checkpoint**: At this point, User Story 5 should be fully functional - users can manage their question history
-
----
-
-## Phase 8: Polish & Cross-Cutting Concerns
-
-**Purpose**: Improvements that affect multiple user stories
-
-- [ ] T087 [P] Add comprehensive logging throughout all services (app/services/*.py) using Python logging module
-- [ ] T088 [P] Create README.md with setup instructions, API documentation, and examples
-- [ ] T089 [P] Create API documentation with endpoint descriptions, request/response examples
-- [ ] T090 Add rate limiting middleware to prevent abuse (Flask-Limiter)
-- [ ] T091 Add request/response logging middleware
-- [ ] T092 [P] Run PEP 8 compliance check: `uv run black --check app/ tests/`
-- [ ] T093 [P] Run linting: `uv run flake8 app/ tests/`
-- [ ] T094 [P] Run static analysis: `uv run pylint app/`
-- [ ] T095 Fix all PEP 8, flake8, and pylint violations
-- [ ] T096 Run full test suite with coverage: `uv run pytest --cov=app --cov-report=term-missing`
-- [ ] T097 Ensure test coverage is >80% for all modules
-- [ ] T098 Performance testing: Verify 100 concurrent uploads handled without degradation
-- [ ] T099 Security audit: Check for SQL injection vulnerabilities, validate all inputs
-- [ ] T100 Create Docker configuration for deployment (Dockerfile, docker-compose.yml with MySQL, Redis, Granian)
-- [ ] T101 [P] Update .env.example with all final configuration options
-- [ ] T102 Write deployment documentation in docs/deployment.md
+**Punto de control**: En este punto, la Historia de Usuario 5 debería ser completamente funcional - los usuarios pueden gestionar su historial de preguntas
 
 ---
 
-## Dependencies & Execution Order
+## Fase 8: Mejoras y Aspectos Transversales
 
-### Phase Dependencies
+**Propósito**: Mejoras que afectan a múltiples historias de usuario
 
-- **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Story 1 (Phase 3)**: Depends on Foundational - MVP target
-- **User Story 2 (Phase 4)**: Depends on Foundational AND User Story 1 (needs Usuario model)
-- **User Story 3 (Phase 5)**: Depends on User Story 2 (needs documents and summaries to exist)
-- **User Story 4 (Phase 6)**: Depends on User Story 2 (extends document management)
-- **User Story 5 (Phase 7)**: Depends on Foundational (can run parallel to other stories but needs Usuario and optionally HistorialDocumento)
-- **Polish (Phase 8)**: Depends on all desired user stories being complete
+- [ ] T087 [#384](https://github.com/JoaquinCaparros711/NotebookUm/issues/384) [P] Agregar logging integral en todos los servicios (app/services/*.py) usando el módulo logging de Python
+- [ ] T088 [#385](https://github.com/JoaquinCaparros711/NotebookUm/issues/385) [P] Crear README.md con instrucciones de configuración, documentación de API y ejemplos
+- [ ] T089 [#386](https://github.com/JoaquinCaparros711/NotebookUm/issues/386) [P] Crear documentación de API con descripciones de endpoints, ejemplos de request/response
+- [ ] T090 [#387](https://github.com/JoaquinCaparros711/NotebookUm/issues/387) Agregar middleware de limitación de tasa para prevenir abuso (Flask-Limiter)
+- [ ] T091 [#388](https://github.com/JoaquinCaparros711/NotebookUm/issues/388) Agregar middleware de logging de request/response
+- [ ] T092 [#389](https://github.com/JoaquinCaparros711/NotebookUm/issues/389) [P] Ejecutar verificación de cumplimiento PEP 8: `uv run black --check app/ tests/`
+- [ ] T093 [#390](https://github.com/JoaquinCaparros711/NotebookUm/issues/390) [P] Ejecutar linting: `uv run flake8 app/ tests/`
+- [ ] T094 [#391](https://github.com/JoaquinCaparros711/NotebookUm/issues/391) [P] Ejecutar análisis estático: `uv run pylint app/`
+- [ ] T095 [#392](https://github.com/JoaquinCaparros711/NotebookUm/issues/392) Corregir todas las violaciones de PEP 8, flake8 y pylint
+- [ ] T096 [#393](https://github.com/JoaquinCaparros711/NotebookUm/issues/393) Ejecutar suite completa de pruebas con cobertura: `uv run pytest --cov=app --cov-report=term-missing`
+- [ ] T097 [#394](https://github.com/JoaquinCaparros711/NotebookUm/issues/394) Asegurar cobertura de pruebas >80% para todos los módulos
+- [ ] T098 [#395](https://github.com/JoaquinCaparros711/NotebookUm/issues/395) Pruebas de rendimiento: Verificar que 100 cargas concurrentes se manejan sin degradación
+- [ ] T099 [#396](https://github.com/JoaquinCaparros711/NotebookUm/issues/396) Auditoría de seguridad: Verificar vulnerabilidades de inyección SQL, validar todas las entradas
+- [ ] T100 [#397](https://github.com/JoaquinCaparros711/NotebookUm/issues/397) Crear configuración Docker para despliegue (Dockerfile, docker-compose.yml con MySQL, Redis, Granian)
+- [ ] T101 [#398](https://github.com/JoaquinCaparros711/NotebookUm/issues/398) [P] Actualizar .env.example con todas las opciones de configuración finales
+- [ ] T102 [#399](https://github.com/JoaquinCaparros711/NotebookUm/issues/399) Escribir documentación de despliegue en docs/deployment.md
 
-### User Story Dependencies
+---
+
+## Dependencias y Orden de Ejecución
+
+### Dependencias entre Fases
+
+- **Configuración (Fase 1)**: Sin dependencias - puede comenzar inmediatamente
+- **Base (Fase 2)**: Depende de completar Configuración - BLOQUEA todas las historias de usuario
+- **Historia de Usuario 1 (Fase 3)**: Depende de Base - objetivo MVP
+- **Historia de Usuario 2 (Fase 4)**: Depende de Base Y Historia de Usuario 1 (necesita modelo Usuario)
+- **Historia de Usuario 3 (Fase 5)**: Depende de Historia de Usuario 2 (necesita que existan documentos y resúmenes)
+- **Historia de Usuario 4 (Fase 6)**: Depende de Historia de Usuario 2 (extiende gestión de documentos)
+- **Historia de Usuario 5 (Fase 7)**: Depende de Base (puede ejecutarse en paralelo con otras historias pero necesita Usuario y opcionalmente HistorialDocumento)
+- **Mejoras (Fase 8)**: Depende de que todas las historias de usuario deseadas estén completas
+
+### Dependencias entre Historias de Usuario
 
 ```
-Phase 1: Setup
+Fase 1: Configuración
     ↓
-Phase 2: Foundational (CRITICAL BLOCKER)
+Fase 2: Base (BLOQUEANTE CRÍTICO)
     ↓
-    ├─→ Phase 3: User Story 1 (Users) 🎯 MVP
+    ├─→ Fase 3: Historia de Usuario 1 (Usuarios) 🎯 MVP
     │       ↓
-    │   Phase 4: User Story 2 (Document Upload & Processing)
+    │   Fase 4: Historia de Usuario 2 (Carga y Procesamiento de Documentos)
     │       ↓
-    │       ├─→ Phase 5: User Story 3 (Summary Retrieval)
-    │       └─→ Phase 6: User Story 4 (Document CRUD)
+    │       ├─→ Fase 5: Historia de Usuario 3 (Consulta de Resúmenes)
+    │       └─→ Fase 6: Historia de Usuario 4 (CRUD de Documentos)
     │
-    └─→ Phase 7: User Story 5 (Questions CRUD) - Can run in parallel
-    
+    └─→ Fase 7: Historia de Usuario 5 (CRUD de Preguntas) - Puede ejecutarse en paralelo
+
     ↓
-Phase 8: Polish
+Fase 8: Mejoras
 ```
 
-### Within Each User Story
+### Dentro de Cada Historia de Usuario
 
-**TDD Workflow (MANDATORY)**:
-1. Write ALL tests first (contract, integration, unit)
-2. Run tests - they MUST FAIL (red)
-3. Implement models
-4. Implement services
-5. Implement routes/endpoints
-6. Run tests again - they MUST PASS (green)
-7. Refactor for quality (maintain green)
+**Flujo TDD (OBLIGATORIO)**:
+1. Escribir TODAS las pruebas primero (contrato, integración, unitarias)
+2. Ejecutar pruebas - DEBEN FALLAR (rojo)
+3. Implementar modelos
+4. Implementar servicios
+5. Implementar rutas/endpoints
+6. Ejecutar pruebas de nuevo - DEBEN PASAR (verde)
+7. Refactorizar para calidad (mantener verde)
 
-### Parallel Opportunities
+### Oportunidades de Paralelismo
 
-- **Phase 1 (Setup)**: T003, T004, T005, T006 can run in parallel
-- **Phase 2 (Foundational)**: T009, T010, T012, T015, T016 can run in parallel
-- **Within User Stories**: All tests marked [P] can run in parallel, all models marked [P] can run in parallel
-- **Phase 8 (Polish)**: T087, T088, T089, T092, T093, T094, T101 can run in parallel
+- **Fase 1 (Configuración)**: T003, T004, T005, T006 pueden ejecutarse en paralelo
+- **Fase 2 (Base)**: T009, T010, T012, T015, T016 pueden ejecutarse en paralelo
+- **Dentro de Historias de Usuario**: Todas las pruebas marcadas [P] pueden ejecutarse en paralelo, todos los modelos marcados [P] pueden ejecutarse en paralelo
+- **Fase 8 (Mejoras)**: T087, T088, T089, T092, T093, T094, T101 pueden ejecutarse en paralelo
 
 ---
 
-## Parallel Example: User Story 2
+## Ejemplo de Paralelismo: Historia de Usuario 2
 
 ```bash
-# Launch all tests for User Story 2 together (TDD - red phase):
-Task T031: "Contract test for POST /api/v1/documento/upload"
-Task T032: "Integration test for PDF extraction"
-Task T033: "Integration test for summary generation"
-Task T034: "Integration test for async processing"
-Task T035: "Unit test for file validation"
+# Lanzar todas las pruebas de Historia de Usuario 2 juntas (TDD - fase roja):
+Tarea T031: "Prueba de contrato para POST /api/v1/documento/upload"
+Tarea T032: "Prueba de integración para extracción de PDF"
+Tarea T033: "Prueba de integración para generación de resumen"
+Tarea T034: "Prueba de integración para procesamiento asíncrono"
+Tarea T035: "Prueba unitaria para validación de archivos"
 
-# Launch models in parallel (green phase):
-Task T036: "Create HistorialDocumento model"
-Task T037: "Create Resumen model"
+# Lanzar modelos en paralelo (fase verde):
+Tarea T036: "Crear modelo HistorialDocumento"
+Tarea T037: "Crear modelo Resumen"
 
-# Sequential services (dependencies):
-Task T040 → T041 → T042 → T043 (validation → pdf → summary → async)
+# Servicios secuenciales (dependencias):
+Tarea T040 → T041 → T042 → T043 (validación → pdf → resumen → asíncrono)
 ```
 
 ---
 
-## Implementation Strategy
+## Estrategia de Implementación
 
-### MVP First (Phases 1-3 Only)
+### MVP Primero (Solo Fases 1-3)
 
-1. Complete Phase 1: Setup (7 tasks)
-2. Complete Phase 2: Foundational (9 tasks) - CRITICAL BLOCKER
-3. Complete Phase 3: User Story 1 (14 tasks) - Users can register and retrieve profiles
-4. **STOP and VALIDATE**: Run all tests, deploy locally, verify end-to-end
-5. **DEMO**: Show working user registration/retrieval system
+1. Completar Fase 1: Configuración (7 tareas)
+2. Completar Fase 2: Base (9 tareas) - BLOQUEANTE CRÍTICO
+3. Completar Fase 3: Historia de Usuario 1 (14 tareas) - Los usuarios pueden registrarse y recuperar perfiles
+4. **PARAR Y VALIDAR**: Ejecutar todas las pruebas, desplegar localmente, verificar extremo a extremo
+5. **DEMO**: Mostrar sistema funcional de registro/recuperación de usuarios
 
-**MVP Deliverable**: Basic user management system ready for document processing features
+**Entregable MVP**: Sistema básico de gestión de usuarios listo para funcionalidades de procesamiento de documentos
 
-### Incremental Delivery (Recommended)
+### Entrega Incremental (Recomendada)
 
-1. **Sprint 1**: Setup + Foundational + US1 → User management working
-2. **Sprint 2**: US2 → Document upload and processing working (core value!)
-3. **Sprint 3**: US3 → Summary retrieval working (complete core workflow)
-4. **Sprint 4**: US4 + US5 → Full CRUD on documents and questions
-5. **Sprint 5**: Polish → Production-ready system
+1. **Sprint 1**: Configuración + Base + HU1 → Gestión de usuarios funcionando
+2. **Sprint 2**: HU2 → Carga y procesamiento de documentos funcionando (¡valor central!)
+3. **Sprint 3**: HU3 → Consulta de resúmenes funcionando (flujo central completo)
+4. **Sprint 4**: HU4 + HU5 → CRUD completo de documentos y preguntas
+5. **Sprint 5**: Mejoras → Sistema listo para producción
 
-### Parallel Team Strategy
+### Estrategia de Equipo en Paralelo
 
-With 3 developers after Foundational phase:
+Con 3 desarrolladores después de la fase Base:
 
-1. **Team completes Phase 1 + 2 together** (foundational work)
-2. Once Foundational is done:
-   - **Developer A**: User Story 1 (14 tasks)
-   - **Developer B**: Prepare for User Story 2 (research Docling/OpenAI integration)
-   - **Developer C**: User Story 5 (10 tasks - independent from US2-4)
-3. After US1 complete:
-   - **Developer A + B**: User Story 2 (20 tasks - largest story)
-   - **Developer C**: Continue US5 or start US4
-4. Sequential: US3 → US4 (both depend on US2)
-5. Parallel: Polish tasks at the end
+1. **El equipo completa Fase 1 + 2 juntos** (trabajo de base)
+2. Una vez completada la Base:
+   - **Desarrollador A**: Historia de Usuario 1 (14 tareas)
+   - **Desarrollador B**: Preparar Historia de Usuario 2 (investigar integración Docling/OpenAI)
+   - **Desarrollador C**: Historia de Usuario 5 (10 tareas - independiente de HU2-4)
+3. Después de completar HU1:
+   - **Desarrollador A + B**: Historia de Usuario 2 (20 tareas - historia más grande)
+   - **Desarrollador C**: Continuar HU5 o comenzar HU4
+4. Secuencial: HU3 → HU4 (ambas dependen de HU2)
+5. Paralelo: Tareas de mejoras al final
 
 ---
 
-## Test Execution Commands
+## Comandos de Ejecución de Pruebas
 
 ```bash
-# Run all tests
+# Ejecutar todas las pruebas
 uv run pytest
 
-# Run specific user story tests
-uv run pytest tests/contract/test_users_api.py -v          # US1
-uv run pytest tests/contract/test_documents_api.py -v      # US2, US4
-uv run pytest tests/contract/test_summaries_api.py -v      # US3
-uv run pytest tests/contract/test_questions_api.py -v      # US5
+# Ejecutar pruebas de historia de usuario específica
+uv run pytest tests/contract/test_users_api.py -v          # HU1
+uv run pytest tests/contract/test_documents_api.py -v      # HU2, HU4
+uv run pytest tests/contract/test_summaries_api.py -v      # HU3
+uv run pytest tests/contract/test_questions_api.py -v      # HU5
 
-# Run with coverage
+# Ejecutar con cobertura
 uv run pytest --cov=app --cov-report=html --cov-report=term-missing
 
-# Run integration tests only
+# Ejecutar solo pruebas de integración
 uv run pytest tests/integration/ -v
 
-# TDD workflow for a feature
-uv run pytest tests/contract/test_users_api.py -v  # Should FAIL initially
-# ... implement feature ...
-uv run pytest tests/contract/test_users_api.py -v  # Should PASS after implementation
+# Flujo TDD para una funcionalidad
+uv run pytest tests/contract/test_users_api.py -v  # Debería FALLAR inicialmente
+# ... implementar funcionalidad ...
+uv run pytest tests/contract/test_users_api.py -v  # Debería PASAR después de la implementación
 ```
 
 ---
 
-## Notes
+## Notas
 
-- **[P] tasks** = different files, no dependencies, can run in parallel
-- **[Story] label** maps task to specific user story for traceability
-- **TDD is MANDATORY**: Tests must be written BEFORE implementation (constitution requirement)
-- Each user story should be independently completable and testable
-- **Red-Green-Refactor**: Verify tests fail → implement → verify tests pass → refactor
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
-- All code must pass black, flake8, and pylint before merging
-- Target >80% test coverage for all modules
+- **Tareas [P]** = archivos diferentes, sin dependencias, pueden ejecutarse en paralelo
+- **Etiqueta [Historia]** mapea tarea a historia de usuario específica para trazabilidad
+- **TDD es OBLIGATORIO**: Las pruebas deben escribirse ANTES de la implementación (requisito de la constitución)
+- Cada historia de usuario debe ser completable y testeable de forma independiente
+- **Rojo-Verde-Refactorizar**: Verificar que las pruebas fallen → implementar → verificar que las pruebas pasen → refactorizar
+- Hacer commit después de cada tarea o grupo lógico
+- Detenerse en cualquier punto de control para validar la historia de forma independiente
+- Todo el código debe pasar black, flake8 y pylint antes de fusionar
+- Objetivo >80% de cobertura de pruebas para todos los módulos
 
 ---
 
-## Total Task Count
+## Conteo Total de Tareas
 
-- **Phase 1 (Setup)**: 7 tasks
-- **Phase 2 (Foundational)**: 9 tasks
-- **Phase 3 (User Story 1)**: 14 tasks
-- **Phase 4 (User Story 2)**: 20 tasks
-- **Phase 5 (User Story 3)**: 10 tasks
-- **Phase 6 (User Story 4)**: 11 tasks
-- **Phase 7 (User Story 5)**: 15 tasks
-- **Phase 8 (Polish)**: 16 tasks
+- **Fase 1 (Configuración)**: 7 tareas
+- **Fase 2 (Base)**: 9 tareas
+- **Fase 3 (Historia de Usuario 1)**: 14 tareas
+- **Fase 4 (Historia de Usuario 2)**: 20 tareas
+- **Fase 5 (Historia de Usuario 3)**: 10 tareas
+- **Fase 6 (Historia de Usuario 4)**: 11 tareas
+- **Fase 7 (Historia de Usuario 5)**: 15 tareas
+- **Fase 8 (Mejoras)**: 16 tareas
 
-**Total: 102 tasks**
+**Total: 102 tareas**
 
-**MVP Scope**: 30 tasks (Phases 1-3)
-**Core Value**: 60 tasks (Phases 1-5 = MVP + document processing + summary retrieval)
+**Alcance MVP**: 30 tareas (Fases 1-3)
+**Valor Central**: 60 tareas (Fases 1-5 = MVP + procesamiento de documentos + consulta de resúmenes)
