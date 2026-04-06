@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing & Coverage
+.pytest_cache
+.coverage
+htmlcov/
+.tox/
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+.travis.yml
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Environment & Config
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.log
+.cache
+
+# Project specific
+.specify
+specs/
+AGENTS.md
+SKILLS.md
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
