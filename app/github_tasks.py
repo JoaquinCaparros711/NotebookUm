@@ -4,239 +4,302 @@ import argparse
 import json
 import os
 import re
-import urllib.error
-import urllib.parse
-import urllib.request
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 
-TASK_SECTION_PATTERN = re.compile(
-    r"^(#{1,6}\s*)?4\.\s*Tareas(?:\s*\(.*?\))?\s*$",
+USER_SCENARIOS_HEADING_PATTERN = re.compile(
+    r"^##\s+User Scenarios\s*&\s*Testing.*$",
     re.IGNORECASE,
 )
-HEADING_PATTERN = re.compile(r"^(#{1,6}\s+.+|\d+\.\s+.+)$")
-TASK_LINE_PATTERN = re.compile(
-    r"^\s*(?:(?:[-*+]\s+(?:\[(?P<checked>[ xX])\]\s*)?)|(?:\d+\.\s+\[(?P<numbered_checked>[ xX])\]\s*))(?P<text>.+?)\s*$"
+NEXT_SECTION_PATTERN = re.compile(r"^##\s+.+$")
+USER_STORY_HEADING_PATTERN = re.compile(
+    r"^###\s+User Story\s+(?P<number>\d+)\s*-\s*(?P<title>.+?)\s+\(Priority:\s*(?P<priority>P\d+)\)$",
+    re.IGNORECASE,
 )
 
 
 @dataclass(slots=True)
-class TaskItem:
+class UserStory:
+    number: int
     title: str
-    completed: bool = False
+    priority: str
+    description: str
+    why_priority: str
+    independent_test: str
+    acceptance_scenarios: list[str]
 
 
-def extract_tasks_section(markdown: str) -> str:
+def extract_user_scenarios_section(markdown: str) -> str:
     lines = markdown.splitlines()
     start_index: int | None = None
 
     for index, line in enumerate(lines):
-        if TASK_SECTION_PATTERN.match(line.strip()):
+        if USER_SCENARIOS_HEADING_PATTERN.match(line.strip()):
             start_index = index + 1
             break
 
     if start_index is None:
-        raise ValueError("No se encontro la seccion '4. Tareas' en el spec.")
+        raise ValueError("No se encontro la seccion '## User Scenarios & Testing' en el spec.")
 
     section_lines: list[str] = []
     for line in lines[start_index:]:
-        stripped_line = line.strip()
-        if HEADING_PATTERN.match(stripped_line) and not TASK_LINE_PATTERN.match(stripped_line):
+        if NEXT_SECTION_PATTERN.match(line.strip()):
             break
         section_lines.append(line)
 
-    return "\n".join(section_lines).strip()
+    section = "\n".join(section_lines).strip()
+    if not section:
+        raise ValueError("La seccion '## User Scenarios & Testing' esta vacia.")
+
+    return section
 
 
-def parse_tasks_from_markdown(markdown: str) -> list[TaskItem]:
-    section = extract_tasks_section(markdown)
-    tasks: list[TaskItem] = []
+def _clean_block(lines: list[str]) -> str:
+    cleaned = [line.rstrip() for line in lines]
+    while cleaned and not cleaned[0].strip():
+        cleaned.pop(0)
+    while cleaned and not cleaned[-1].strip():
+        cleaned.pop()
+    return "\n".join(cleaned).strip()
 
-    for line in section.splitlines():
-        match = TASK_LINE_PATTERN.match(line)
-        if not match:
-            continue
 
-        task_text = match.group("text").strip()
-        if not task_text:
-            continue
+def parse_user_stories(markdown: str) -> list[UserStory]:
+    section = extract_user_scenarios_section(markdown)
+    lines = section.splitlines()
+    stories: list[UserStory] = []
+    current: dict | None = None
 
-        tasks.append(
-            TaskItem(
-                title=task_text,
-                completed=((match.group("checked") or match.group("numbered_checked") or "").lower() == "x"),
+    def flush_current() -> None:
+        nonlocal current
+        if not current:
+            return
+
+        stories.append(
+            UserStory(
+                number=current["number"],
+                title=current["title"],
+                priority=current["priority"].upper(),
+                description=_clean_block(current["description"]),
+                why_priority=_clean_block(current["why_priority"]),
+                independent_test=_clean_block(current["independent_test"]),
+                acceptance_scenarios=[
+                    scenario.strip()
+                    for scenario in current["acceptance_scenarios"]
+                    if scenario.strip()
+                ],
             )
         )
+        current = None
 
-    if not tasks:
-        raise ValueError("La seccion '4. Tareas' no contiene tareas parseables.")
+    mode = "description"
 
-    return tasks
+    for line in lines:
+        stripped = line.strip()
+        story_match = USER_STORY_HEADING_PATTERN.match(stripped)
+        if story_match:
+            flush_current()
+            current = {
+                "number": int(story_match.group("number")),
+                "title": story_match.group("title").strip(),
+                "priority": story_match.group("priority").strip(),
+                "description": [],
+                "why_priority": [],
+                "independent_test": [],
+                "acceptance_scenarios": [],
+            }
+            mode = "description"
+            continue
 
+        if current is None:
+            continue
 
-class GitHubClient:
-    def __init__(self, token: str, api_base_url: str = "https://api.github.com") -> None:
-        self.token = token
-        self.api_base_url = api_base_url.rstrip("/")
+        if stripped.startswith("**Why this priority**:"):
+            mode = "why_priority"
+            value = stripped.split(":", 1)[1].strip()
+            if value:
+                current[mode].append(value)
+            continue
 
-    def _request(
-        self,
-        method: str,
-        path: str,
-        payload: dict | None = None,
-        graphql: bool = False,
-    ) -> dict:
-        url = f"{self.api_base_url}{path}"
-        data = None
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {self.token}",
-            "User-Agent": "NotebookUm-spec-sync",
-        }
+        if stripped.startswith("**Independent Test**:"):
+            mode = "independent_test"
+            value = stripped.split(":", 1)[1].strip()
+            if value:
+                current[mode].append(value)
+            continue
 
-        if payload is not None:
-            data = json.dumps(payload).encode("utf-8")
-            headers["Content-Type"] = "application/json"
+        if stripped.startswith("**Acceptance Scenarios**:"):
+            mode = "acceptance_scenarios"
+            continue
 
-        request = urllib.request.Request(url, data=data, headers=headers, method=method)
+        if stripped == "---":
+            flush_current()
+            mode = "description"
+            continue
 
-        try:
-            with urllib.request.urlopen(request) as response:
-                charset = response.headers.get_content_charset() or "utf-8"
-                body = response.read().decode(charset)
-                return json.loads(body) if body else {}
-        except urllib.error.HTTPError as error:
-            charset = error.headers.get_content_charset() or "utf-8"
-            body = error.read().decode(charset)
-            raise RuntimeError(
-                f"GitHub API error ({error.code}) en {path}: {body}"
-            ) from error
+        current[mode].append(line)
 
-    def find_issue_by_title(self, repository: str, title: str) -> dict | None:
-        query = urllib.parse.quote(title)
-        data = self._request(
-            "GET",
-            f"/repos/{repository}/issues?state=all&per_page=100&creator=&labels=&sort=created&direction=desc",
-        )
+    flush_current()
 
-        for issue in data:
-            if issue.get("pull_request"):
-                continue
-            if issue.get("title") == title:
-                return issue
-        return None
+    if not stories:
+        raise ValueError("No se encontraron user stories parseables en el spec.")
 
-    def create_issue(self, repository: str, title: str, body: str) -> dict:
-        return self._request(
-            "POST",
-            f"/repos/{repository}/issues",
-            {"title": title, "body": body},
-        )
-
-    def get_project_v2_id(self, owner: str, number: int) -> str:
-        query = """
-        query($owner: String!, $number: Int!) {
-          user(login: $owner) {
-            projectV2(number: $number) { id }
-          }
-          organization(login: $owner) {
-            projectV2(number: $number) { id }
-          }
-        }
-        """
-        response = self._request(
-            "POST",
-            "/graphql",
-            {"query": query, "variables": {"owner": owner, "number": number}},
-            graphql=True,
-        )
-        data = response.get("data", {})
-        project = (data.get("user") or {}).get("projectV2") or (
-            data.get("organization") or {}
-        ).get("projectV2")
-        if not project:
-            raise RuntimeError(
-                f"No se pudo resolver el GitHub Project v2 owner={owner} number={number}."
-            )
-        return project["id"]
-
-    def add_issue_to_project(self, project_id: str, issue_node_id: str) -> dict:
-        mutation = """
-        mutation($projectId: ID!, $contentId: ID!) {
-          addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
-            item { id }
-          }
-        }
-        """
-        return self._request(
-            "POST",
-            "/graphql",
-            {
-                "query": mutation,
-                "variables": {"projectId": project_id, "contentId": issue_node_id},
-            },
-            graphql=True,
-        )
+    return stories
 
 
-def build_issue_body(task: TaskItem, spec_path: Path) -> str:
-    status = "completada" if task.completed else "pendiente"
-    return (
-        "Issue generado automaticamente desde spec.md.\n\n"
-        f"- Origen: `{spec_path}`\n"
-        f"- Estado en spec: `{status}`\n"
+def _run_gh(args: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["gh", *args],
+        cwd=str(cwd) if cwd else None,
+        check=True,
+        capture_output=True,
+        text=True,
     )
 
 
-def sync_spec_tasks(
+def ensure_gh_available() -> None:
+    try:
+        _run_gh(["--version"])
+    except FileNotFoundError as error:
+        raise RuntimeError(
+            "No se encontro 'gh'. Instala GitHub CLI y autenticalo con 'gh auth login'."
+        ) from error
+    except subprocess.CalledProcessError as error:
+        raise RuntimeError(
+            f"No se pudo ejecutar 'gh --version': {error.stderr.strip() or error.stdout.strip()}"
+        ) from error
+
+
+def gh_issue_list(repository: str) -> list[dict]:
+    result = _run_gh(
+        [
+            "issue",
+            "list",
+            "--repo",
+            repository,
+            "--state",
+            "all",
+            "--limit",
+            "200",
+            "--json",
+            "title,url,number",
+        ]
+    )
+    return json.loads(result.stdout or "[]")
+
+
+def gh_issue_create(repository: str, title: str, body: str, labels: list[str]) -> dict:
+    args = [
+        "issue",
+        "create",
+        "--repo",
+        repository,
+        "--title",
+        title,
+        "--body",
+        body,
+        "--json",
+        "id,number,title,url",
+    ]
+    for label in labels:
+        args.extend(["--label", label])
+
+    result = _run_gh(args)
+    return json.loads(result.stdout)
+
+
+def gh_project_item_add(project_owner: str, project_number: int, issue_url: str) -> None:
+    _run_gh(
+        [
+            "project",
+            "item-add",
+            str(project_number),
+            "--owner",
+            project_owner,
+            "--url",
+            issue_url,
+        ]
+    )
+
+
+def find_existing_issue(issues: list[dict], title: str) -> dict | None:
+    for issue in issues:
+        if issue.get("title") == title:
+            return issue
+    return None
+
+
+def build_issue_title(story: UserStory) -> str:
+    return f"[{story.priority}] User Story {story.number}: {story.title}"
+
+
+def build_issue_body(story: UserStory, spec_path: Path) -> str:
+    acceptance = "\n".join(story.acceptance_scenarios).strip()
+    acceptance_block = acceptance if acceptance else "- Sin escenarios definidos"
+    description = story.description or "Sin descripcion"
+    why_priority = story.why_priority or "Sin justificacion"
+    independent_test = story.independent_test or "Sin test independiente"
+
+    return (
+        f"Generado automaticamente desde `{spec_path}`.\n\n"
+        f"## Historia de Usuario\n{description}\n\n"
+        f"## Prioridad\n- {story.priority}\n- {why_priority}\n\n"
+        f"## Prueba Independiente\n{independent_test}\n\n"
+        f"## Acceptance Scenarios\n{acceptance_block}\n"
+    )
+
+
+def sync_spec_user_stories(
     spec_path: Path,
     repository: str,
-    token: str,
     project_owner: str | None = None,
     project_number: int | None = None,
     dry_run: bool = False,
 ) -> list[dict]:
-    tasks = parse_tasks_from_markdown(spec_path.read_text(encoding="utf-8"))
+    ensure_gh_available()
+    stories = parse_user_stories(spec_path.read_text(encoding="utf-8"))
+    existing_issues = gh_issue_list(repository) if not dry_run else []
     results: list[dict] = []
 
-    if dry_run:
-        return [
-            {
-                "title": task.title,
-                "completed": task.completed,
-                "action": "dry-run",
-            }
-            for task in tasks
-        ]
+    for story in stories:
+        title = build_issue_title(story)
+        labels = [story.priority.lower(), "user-story"]
+        existing_issue = find_existing_issue(existing_issues, title)
 
-    client = GitHubClient(token=token)
-    project_id = None
-    if project_owner and project_number is not None:
-        project_id = client.get_project_v2_id(project_owner, project_number)
+        if dry_run:
+            results.append(
+                {
+                    "title": title,
+                    "priority": story.priority,
+                    "labels": labels,
+                    "action": "dry-run",
+                }
+            )
+            continue
 
-    for task in tasks:
-        existing_issue = client.find_issue_by_title(repository, task.title)
-        issue = existing_issue
-        action = "existing"
-
-        if issue is None:
-            issue = client.create_issue(
+        if existing_issue:
+            issue_data = existing_issue
+            action = "existing"
+        else:
+            issue_data = gh_issue_create(
                 repository=repository,
-                title=task.title,
-                body=build_issue_body(task, spec_path),
+                title=title,
+                body=build_issue_body(story, spec_path),
+                labels=labels,
             )
             action = "created"
 
-        if project_id and issue.get("node_id"):
-            client.add_issue_to_project(project_id=project_id, issue_node_id=issue["node_id"])
+        if project_owner and project_number is not None:
+            gh_project_item_add(project_owner, project_number, issue_data["url"])
 
         results.append(
             {
-                "title": task.title,
-                "completed": task.completed,
+                "title": title,
+                "priority": story.priority,
+                "labels": labels,
                 "action": action,
-                "issue_url": issue.get("html_url"),
+                "issue_url": issue_data.get("url"),
             }
         )
 
@@ -245,7 +308,7 @@ def sync_spec_tasks(
 
 def build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Lee spec.md, extrae '4. Tareas' y crea issues en GitHub."
+        description="Lee user stories de spec.md y crea issues en GitHub usando gh CLI."
     )
     parser.add_argument("spec_path", help="Ruta al archivo spec.md")
     parser.add_argument(
@@ -256,23 +319,18 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--project-owner",
         default=os.getenv("GITHUB_PROJECT_OWNER"),
-        help="Owner del GitHub Project v2",
+        help="Owner del GitHub Project",
     )
     parser.add_argument(
         "--project-number",
         type=int,
         default=int(os.getenv("GITHUB_PROJECT_NUMBER", "0")) or None,
-        help="Numero del GitHub Project v2",
-    )
-    parser.add_argument(
-        "--token",
-        default=os.getenv("GITHUB_TOKEN"),
-        help="Token GitHub con permisos para issues y projects",
+        help="Numero del GitHub Project",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Solo parsea y muestra tareas, sin crear issues.",
+        help="Solo parsea y muestra las historias, sin crear issues.",
     )
     return parser
 
@@ -284,18 +342,13 @@ def main() -> int:
     if not args.repo:
         parser.error("Falta --repo o GITHUB_REPOSITORY.")
 
-    if not args.dry_run and not args.token:
-        parser.error("Falta --token o GITHUB_TOKEN.")
-
-    results = sync_spec_tasks(
+    results = sync_spec_user_stories(
         spec_path=Path(args.spec_path),
         repository=args.repo,
-        token=args.token or "",
         project_owner=args.project_owner,
         project_number=args.project_number,
         dry_run=args.dry_run,
     )
-
     print(json.dumps(results, ensure_ascii=False, indent=2))
     return 0
 
