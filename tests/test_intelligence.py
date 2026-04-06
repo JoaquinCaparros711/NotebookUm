@@ -22,3 +22,4 @@ def test_chat_endpoint_returns_response_from_gemma(client):
     assert "response" in data
     assert isinstance(data["response"], str)
     assert len(data["response"]) > 0
+    assert "Hello, what is 2+2?" in data["response"]
