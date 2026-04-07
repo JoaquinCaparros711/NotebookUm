@@ -42,7 +42,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T008 [#299](https://github.com/JoaquinCaparros711/NotebookUm/issues/299) Crear app/config.py con clases BaseConfig, DevelopmentConfig, ProductionConfig, TestingConfig usando dataclasses para DatabaseConfig y OpenAIConfig
 - [x] T009 [#300](https://github.com/JoaquinCaparros711/NotebookUm/issues/300) [P] Crear app/database.py con inicialización de SQLAlchemy (objeto db, clase Base)
 - [ ] T010 [#301](https://github.com/JoaquinCaparros711/NotebookUm/issues/301) [P] Crear app/utils/errors.py con utilidades de respuesta de error RFC 9457 (función problem_details para errores 400/404/500)
-- [ ] T011 [#302](https://github.com/JoaquinCaparros711/NotebookUm/issues/302) Actualizar app/__init__.py con fábrica de aplicación Flask (función create_app) que inicializa db, registra blueprints y configura cliente OpenAI
+- [x] T011 [#302](https://github.com/JoaquinCaparros711/NotebookUm/issues/302) Actualizar app/__init__.py con fábrica de aplicación Flask (función create_app) que inicializa db, registra blueprints y configura cliente OpenAI
 - [ ] T012 [#303](https://github.com/JoaquinCaparros711/NotebookUm/issues/303) [P] Crear app/utils/db.py con utilidades de gestión de sesión de base de datos
 - [ ] T013 [#304](https://github.com/JoaquinCaparros711/NotebookUm/issues/304) Inicializar migraciones Alembic en directorio migrations/
 - [ ] T014 [#305](https://github.com/JoaquinCaparros711/NotebookUm/issues/305) Crear main.py con punto de entrada del servidor Granian
