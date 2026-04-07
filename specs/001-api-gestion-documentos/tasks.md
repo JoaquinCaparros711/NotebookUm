@@ -139,7 +139,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 
 ### Pruebas para Historia de Usuario 3 (TDD - ESCRIBIR PRIMERO, ASEGURAR QUE FALLEN)
 
-- [ ] T051 [#345](https://github.com/JoaquinCaparros711/NotebookUm/issues/345) [P] [US3] Escribir prueba de contrato para GET /api/v1/summaries/document/{document_id} en tests/contract/test_summaries_api.py (probar recuperación exitosa, probar 404 para documento inexistente, probar 403 para acceso no autorizado, probar estado pendiente para documento en procesamiento)
+- [x] T051 [#345](https://github.com/JoaquinCaparros711/NotebookUm/issues/345) [P] [US3] Escribir prueba de contrato para GET /api/v1/summaries/document/{document_id} en tests/contract/test_summaries_api.py (probar recuperación exitosa, probar 404 para documento inexistente, probar 403 para acceso no autorizado, probar estado pendiente para documento en procesamiento)
 - [ ] T052 [#346](https://github.com/JoaquinCaparros711/NotebookUm/issues/346) [P] [US3] Escribir prueba de integración para recuperación de resumen en tests/integration/test_summary_retrieval.py (probar flujo completo: cargar → procesar → recuperar resumen)
 
 ### Implementación para Historia de Usuario 3
