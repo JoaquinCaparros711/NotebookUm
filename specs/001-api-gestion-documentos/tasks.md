@@ -39,7 +39,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 
 **⚠️ CRÍTICO**: No se puede comenzar trabajo de historias de usuario hasta que esta fase esté completa
 
-- [ ] T008 [#299](https://github.com/JoaquinCaparros711/NotebookUm/issues/299) Crear app/config.py con clases BaseConfig, DevelopmentConfig, ProductionConfig, TestingConfig usando dataclasses para DatabaseConfig y OpenAIConfig
+- [x] T008 [#299](https://github.com/JoaquinCaparros711/NotebookUm/issues/299) Crear app/config.py con clases BaseConfig, DevelopmentConfig, ProductionConfig, TestingConfig usando dataclasses para DatabaseConfig y OpenAIConfig
 - [ ] T009 [#300](https://github.com/JoaquinCaparros711/NotebookUm/issues/300) [P] Crear app/database.py con inicialización de SQLAlchemy (objeto db, clase Base)
 - [ ] T010 [#301](https://github.com/JoaquinCaparros711/NotebookUm/issues/301) [P] Crear app/utils/errors.py con utilidades de respuesta de error RFC 9457 (función problem_details para errores 400/404/500)
 - [ ] T011 [#302](https://github.com/JoaquinCaparros711/NotebookUm/issues/302) Actualizar app/__init__.py con fábrica de aplicación Flask (función create_app) que inicializa db, registra blueprints y configura cliente OpenAI
