@@ -43,9 +43,11 @@ def register_blueprints(app: Flask) -> None:
     """Register Flask blueprints"""
     from .routes.main import main_bp
     from .routes.intelligence import intelligence_bp
+    from .routes.users import users_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(intelligence_bp)
+    app.register_blueprint(users_bp)
 
 
 def register_error_handlers(app: Flask) -> None:
