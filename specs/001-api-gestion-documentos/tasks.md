@@ -29,7 +29,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T004 [#294](https://github.com/JoaquinCaparros711/NotebookUm/issues/294) [P] Configurar formateador black en pyproject.toml (line-length=100, cumplimiento PEP 8)
 - [ ] T005 [#295](https://github.com/JoaquinCaparros711/NotebookUm/issues/295) [P] Configurar linter flake8 en archivo .flake8
 - [ ] T006 [#296](https://github.com/JoaquinCaparros711/NotebookUm/issues/296) [P] Configurar pytest en pyproject.toml (testpaths, configuración de cobertura)
-- [ ] T007 [#297](https://github.com/JoaquinCaparros711/NotebookUm/issues/297) Crear estructura de directorios: app/models/, app/routes/, app/services/, app/utils/, tests/unit/, tests/integration/, tests/contract/, migrations/
+- [x] T007 [#297](https://github.com/JoaquinCaparros711/NotebookUm/issues/297) Crear estructura de directorios: app/models/, app/routes/, app/services/, app/utils/, tests/unit/, tests/integration/, tests/contract/, migrations/
 
 ---
 
@@ -40,14 +40,14 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 **⚠️ CRÍTICO**: No se puede comenzar trabajo de historias de usuario hasta que esta fase esté completa
 
 - [x] T008 [#299](https://github.com/JoaquinCaparros711/NotebookUm/issues/299) Crear app/config.py con clases BaseConfig, DevelopmentConfig, ProductionConfig, TestingConfig usando dataclasses para DatabaseConfig y OpenAIConfig
-- [ ] T009 [#300](https://github.com/JoaquinCaparros711/NotebookUm/issues/300) [P] Crear app/database.py con inicialización de SQLAlchemy (objeto db, clase Base)
+- [x] T009 [#300](https://github.com/JoaquinCaparros711/NotebookUm/issues/300) [P] Crear app/database.py con inicialización de SQLAlchemy (objeto db, clase Base)
 - [ ] T010 [#301](https://github.com/JoaquinCaparros711/NotebookUm/issues/301) [P] Crear app/utils/errors.py con utilidades de respuesta de error RFC 9457 (función problem_details para errores 400/404/500)
-- [ ] T011 [#302](https://github.com/JoaquinCaparros711/NotebookUm/issues/302) Actualizar app/__init__.py con fábrica de aplicación Flask (función create_app) que inicializa db, registra blueprints y configura cliente OpenAI
+- [x] T011 [#302](https://github.com/JoaquinCaparros711/NotebookUm/issues/302) Actualizar app/__init__.py con fábrica de aplicación Flask (función create_app) que inicializa db, registra blueprints y configura cliente OpenAI
 - [ ] T012 [#303](https://github.com/JoaquinCaparros711/NotebookUm/issues/303) [P] Crear app/utils/db.py con utilidades de gestión de sesión de base de datos
 - [ ] T013 [#304](https://github.com/JoaquinCaparros711/NotebookUm/issues/304) Inicializar migraciones Alembic en directorio migrations/
-- [ ] T014 [#305](https://github.com/JoaquinCaparros711/NotebookUm/issues/305) Crear main.py con punto de entrada del servidor Granian
-- [ ] T015 [#306](https://github.com/JoaquinCaparros711/NotebookUm/issues/306) [P] Escribir pruebas unitarias para app/config.py en tests/unit/test_config.py (probar carga de variables de entorno)
-- [ ] T016 [#307](https://github.com/JoaquinCaparros711/NotebookUm/issues/307) [P] Escribir pruebas unitarias para app/utils/errors.py en tests/unit/test_errors.py (probar formato RFC 9457)
+- [x] T014 [#305](https://github.com/JoaquinCaparros711/NotebookUm/issues/305) Crear main.py con punto de entrada del servidor Granian
+- [x] T015 [#306](https://github.com/JoaquinCaparros711/NotebookUm/issues/306) [P] Escribir pruebas unitarias para app/config.py en tests/unit/test_config.py (probar carga de variables de entorno)
+- [x] T016 [#307](https://github.com/JoaquinCaparros711/NotebookUm/issues/307) [P] Escribir pruebas unitarias para app/utils/errors.py en tests/unit/test_errors.py (probar formato RFC 9457)
 
 **Punto de control**: Base lista - la implementación de historias de usuario puede comenzar en paralelo
 
