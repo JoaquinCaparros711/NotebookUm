@@ -70,6 +70,13 @@ def not_found(detail: str, instance: Optional[str] = None, **kwargs: Any) -> Res
     )
 
 
+def forbidden(detail: str, instance: Optional[str] = None, **kwargs: Any) -> Response:
+    """Shortcut for 403 Forbidden errors"""
+    return problem_details(
+        status=403, title="Forbidden", detail=detail, instance=instance, **kwargs
+    )
+
+
 def internal_server_error(
     detail: str = "An unexpected error occurred",
     instance: Optional[str] = None,
