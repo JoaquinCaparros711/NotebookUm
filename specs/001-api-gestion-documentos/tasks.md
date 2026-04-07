@@ -45,7 +45,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T011 [#302](https://github.com/JoaquinCaparros711/NotebookUm/issues/302) Actualizar app/__init__.py con fábrica de aplicación Flask (función create_app) que inicializa db, registra blueprints y configura cliente OpenAI
 - [ ] T012 [#303](https://github.com/JoaquinCaparros711/NotebookUm/issues/303) [P] Crear app/utils/db.py con utilidades de gestión de sesión de base de datos
 - [ ] T013 [#304](https://github.com/JoaquinCaparros711/NotebookUm/issues/304) Inicializar migraciones Alembic en directorio migrations/
-- [ ] T014 [#305](https://github.com/JoaquinCaparros711/NotebookUm/issues/305) Crear main.py con punto de entrada del servidor Granian
+- [x] T014 [#305](https://github.com/JoaquinCaparros711/NotebookUm/issues/305) Crear main.py con punto de entrada del servidor Granian
 - [x] T015 [#306](https://github.com/JoaquinCaparros711/NotebookUm/issues/306) [P] Escribir pruebas unitarias para app/config.py en tests/unit/test_config.py (probar carga de variables de entorno)
 - [x] T016 [#307](https://github.com/JoaquinCaparros711/NotebookUm/issues/307) [P] Escribir pruebas unitarias para app/utils/errors.py en tests/unit/test_errors.py (probar formato RFC 9457)
 
