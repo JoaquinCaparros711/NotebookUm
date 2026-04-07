@@ -18,13 +18,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0
 
-      - name: Update tasks.md checkbox
+      - name: Pull, update tasks.md, commit & push
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_ACTION: ${{ github.event.action }}
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+
           python3 - <<'SCRIPT'
           import os, re, glob
 
@@ -43,8 +46,7 @@ jobs:
           updated = False
           for path in glob.glob("specs/*/tasks.md"):
               text = open(path, encoding="utf-8").read()
-              pattern = rf"({re.escape(old)} {task_id}\b)"
-              result = re.sub(pattern, f"{new} {task_id}", text, count=1)
+              result = re.sub(rf"({re.escape(old)} {task_id}\b)", f"{new} {task_id}", text, count=1)
               if result != text:
                   open(path, "w", encoding="utf-8").write(result)
                   print(f"OK {task_id} -> {'[x]' if action == 'closed' else '[ ]'} en {path}")
@@ -54,17 +56,12 @@ jobs:
               print(f"WARN {task_id} no encontrado en ningun tasks.md")
           SCRIPT
 
-      - name: Commit & push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
           git add "specs/*/tasks.md"
-          git diff --cached --quiet && echo "Sin cambios" && exit 0
+          if git diff --cached --quiet; then
+            echo "Sin cambios"
+            exit 0
+          fi
           TASK_ID=$(echo "$ISSUE_TITLE" | grep -oP '^\[T\d+\]' || echo "task")
           ACTION=$( [ "$ISSUE_ACTION" = "closed" ] && echo "completada" || echo "reabierta" )
           git commit -m "chore(tasks): $TASK_ID $ACTION"
           git push
-        env:
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_ACTION: ${{ github.event.action }}
