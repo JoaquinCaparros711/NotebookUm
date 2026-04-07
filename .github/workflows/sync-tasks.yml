@@ -4,6 +4,10 @@ on:
   issues:
     types: [closed, reopened]
 
+concurrency:
+  group: sync-tasks
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -12,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Update tasks.md checkbox
         env:
@@ -40,17 +47,18 @@ jobs:
               result = re.sub(pattern, f"{new} {task_id}", text, count=1)
               if result != text:
                   open(path, "w", encoding="utf-8").write(result)
-                  print(f"✓ {task_id} → {'[x]' if action == 'closed' else '[ ]'} en {path}")
+                  print(f"OK {task_id} -> {'[x]' if action == 'closed' else '[ ]'} en {path}")
                   updated = True
 
           if not updated:
-              print(f"⚠ {task_id} no encontrado en ningún tasks.md")
+              print(f"WARN {task_id} no encontrado en ningun tasks.md")
           SCRIPT
 
       - name: Commit & push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
           git add "specs/*/tasks.md"
           git diff --cached --quiet && echo "Sin cambios" && exit 0
           TASK_ID=$(echo "$ISSUE_TITLE" | grep -oP '^\[T\d+\]' || echo "task")
