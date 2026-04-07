@@ -24,7 +24,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 **Propósito**: Inicialización del proyecto y estructura básica
 
 - [ ] T001 [#291](https://github.com/JoaquinCaparros711/NotebookUm/issues/291) Actualizar pyproject.toml con todas las dependencias (Flask, SQLAlchemy, Flask-SQLAlchemy, mysql-connector-python, alembic, openai, docling, granian, celery, redis, python-dotenv, black, flake8, pylint, pytest, pytest-flask, pytest-cov, pytest-mock)
-- [ ] T002 [#292](https://github.com/JoaquinCaparros711/NotebookUm/issues/292) Ejecutar `uv sync` para instalar todas las dependencias
+- [x] T002 [#292](https://github.com/JoaquinCaparros711/NotebookUm/issues/292) Ejecutar `uv sync` para instalar todas las dependencias
 - [ ] T003 [#293](https://github.com/JoaquinCaparros711/NotebookUm/issues/293) [P] Crear .env.example con todas las variables de entorno requeridas (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, OPENAI_API_KEY, CELERY_BROKER_URL, SECRET_KEY, MAX_UPLOAD_SIZE)
 - [x] T004 [#294](https://github.com/JoaquinCaparros711/NotebookUm/issues/294) [P] Configurar formateador black en pyproject.toml (line-length=100, cumplimiento PEP 8)
 - [ ] T005 [#295](https://github.com/JoaquinCaparros711/NotebookUm/issues/295) [P] Configurar linter flake8 en archivo .flake8
