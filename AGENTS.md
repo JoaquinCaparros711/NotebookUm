@@ -1,31 +1,32 @@
-# 🤖 Definición de Agentes
+# 🤖 Agentes en NotebookUm (Global)
 
-Este documento describe el conjunto de agentes utilizados en NotebookUm. Se sigue una arquitectura de múltiples modelos para optimizar tanto la latencia como la profundidad analítica.
+Este documento centraliza la arquitectura general de los agentes que operan en **NotebookUm**. Para evitar una definición monolítica y global, las responsabilidades y reglas específicas de cada agente se delegan a sus respectivos contextos en cada carpeta.
+
+## Arquitectura Base
+
+Se sigue un modelo de múltiples modelos de IA para optimizar la latencia y la profundidad analítica, compuesto por tres roles fundamentales:
+
+1. **El Sintetizador (Gemma3-4b)**: Síntesis de información y resúmenes ejecutivos.
+2. **El Interrogador (Nemotron-3-nano-30b)**: Generación de Q&A y detección de dudas y flujos alternos.
+3. **El Investigador (GPT-OSS-20b)**: Análisis profundo, investigación técnica de arquitecturas y patrones.
 
 ```mermaid
 flowchart LR
-    A[Output Markdown] --> B(Sintetizador)
+    A[Contexto Local] --> B(Sintetizador)
     A --> C(Interrogador)
     A --> D(Investigador)
     
-    B -->|Resumen| E[(Resultado Final)]
-    C -->|Q&A| E
-    D -->|Investigación| E
+    B --> E[(Output de Agente Local)]
+    C --> E
+    D --> E
 ```
 
----
+## Agentes por Contexto
 
-### 1. El Sintetizador (Gemma3-4b)
-- **Objetivo:** Extraer ideas principales y realizar resúmenes ejecutivos.
-- **Razón de elección:** Baja latencia y alta capacidad de síntesis en contextos cortos/medios.
-- **Output:** Markdown con bullet points y conceptos clave.
+Cada módulo principal del repositorio define las instrucciones exactas y el comportamiento esperado para los agentes según sus necesidades:
 
-### 2. El Interrogador (Nemotron-3-nano-30b)
-- **Objetivo:** Generar secciones de preguntas y respuestas (Q&A) basadas en el contexto recuperado.
-- **Razón de elección:** Excelente seguimiento de instrucciones y razonamiento lógico para detectar dudas potenciales del usuario.
-- **Output:** Formato Pregunta/Respuesta con referencias al texto original.
+- 📁 [**app/agents.md**](./app/agents.md): Reglas para el desarrollo del código, lógica de negocio y arquitectura (API, Base de datos, Tareas asíncronas).
+- 📁 [**specs/agents.md**](./specs/agents.md): Reglas para la gestión y análisis de requerimientos, planes de desarrollo (plan.md, spec.md, tasks.md) y adherencia a la `constitution.md`.
+- 📁 [**tests/agents.md**](./tests/agents.md): Reglas para el ciclo de pruebas guiadas por TDD, diseño de contratos y casos límite.
 
-### 3. El Investigador (GPT-OSS-20b)
-- **Objetivo:** Realizar una investigación profunda, encontrar patrones complejos y sintetizar conclusiones técnicas.
-- **Razón de elección:** Su tamaño permite un razonamiento más denso y una "investigación" interna más robusta sobre el contenido total del Markdown.
-- **Output:** Reporte detallado de investigación.
+*Consulta el archivo `agents.md` de cada carpeta para entender cómo operan los agentes en esos directorios específicos y cómo aplican principios como TDD o PEP 8.*
