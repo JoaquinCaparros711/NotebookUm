@@ -47,7 +47,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [ ] T013 [#304](https://github.com/JoaquinCaparros711/NotebookUm/issues/304) Inicializar migraciones Alembic en directorio migrations/
 - [ ] T014 [#305](https://github.com/JoaquinCaparros711/NotebookUm/issues/305) Crear main.py con punto de entrada del servidor Granian
 - [ ] T015 [#306](https://github.com/JoaquinCaparros711/NotebookUm/issues/306) [P] Escribir pruebas unitarias para app/config.py en tests/unit/test_config.py (probar carga de variables de entorno)
-- [ ] T016 [#307](https://github.com/JoaquinCaparros711/NotebookUm/issues/307) [P] Escribir pruebas unitarias para app/utils/errors.py en tests/unit/test_errors.py (probar formato RFC 9457)
+- [x] T016 [#307](https://github.com/JoaquinCaparros711/NotebookUm/issues/307) [P] Escribir pruebas unitarias para app/utils/errors.py en tests/unit/test_errors.py (probar formato RFC 9457)
 
 **Punto de control**: Base lista - la implementación de historias de usuario puede comenzar en paralelo
 
