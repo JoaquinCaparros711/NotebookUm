@@ -29,7 +29,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T004 [#294](https://github.com/JoaquinCaparros711/NotebookUm/issues/294) [P] Configurar formateador black en pyproject.toml (line-length=100, cumplimiento PEP 8)
 - [ ] T005 [#295](https://github.com/JoaquinCaparros711/NotebookUm/issues/295) [P] Configurar linter flake8 en archivo .flake8
 - [ ] T006 [#296](https://github.com/JoaquinCaparros711/NotebookUm/issues/296) [P] Configurar pytest en pyproject.toml (testpaths, configuración de cobertura)
-- [ ] T007 [#297](https://github.com/JoaquinCaparros711/NotebookUm/issues/297) Crear estructura de directorios: app/models/, app/routes/, app/services/, app/utils/, tests/unit/, tests/integration/, tests/contract/, migrations/
+- [x] T007 [#297](https://github.com/JoaquinCaparros711/NotebookUm/issues/297) Crear estructura de directorios: app/models/, app/routes/, app/services/, app/utils/, tests/unit/, tests/integration/, tests/contract/, migrations/
 
 ---
 
