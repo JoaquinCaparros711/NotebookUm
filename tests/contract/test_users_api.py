@@ -134,3 +134,54 @@ class TestPostUsers:
         assert data["status"] == 409
         assert "duplicate@example.com" in data["detail"]
         assert data["instance"] == "/api/v1/users"
+
+
+@pytest.mark.contract
+class TestGetUsers:
+    """Contract tests for GET /api/v1/users/{id}"""
+
+    def test_get_user_success(self, client):
+        """Test successful user retrieval with valid ID"""
+        # Given: An existing user
+        user_data = {
+            "email": "get_test@example.com",
+            "nombre": "Get Test User"
+        }
+        create_response = client.post("/api/v1/users", json=user_data)
+        assert create_response.status_code == 201
+        created_user = create_response.get_json()
+        user_id = created_user["id"]
+
+        # When: GET request to /api/v1/users/{id}
+        response = client.get(f"/api/v1/users/{user_id}")
+
+        # Then: Returns 200 OK
+        assert response.status_code == 200
+        
+        # Then: Response contains user data
+        data = response.get_json()
+        assert data is not None
+        assert data["id"] == user_id
+        assert data["email"] == "get_test@example.com"
+        assert data["nombre"] == "Get Test User"
+        assert "created_at" in data
+        assert "updated_at" in data
+
+    def test_get_user_not_found(self, client):
+        """Test user retrieval fails when user does not exist"""
+        # Given: A non-existent user ID
+        non_existent_id = 99999
+
+        # When: GET request to /api/v1/users/{id}
+        response = client.get(f"/api/v1/users/{non_existent_id}")
+
+        # Then: Returns 404 Not Found
+        assert response.status_code == 404
+        
+        # Then: Response follows RFC 9457 format
+        data = response.get_json()
+        assert data is not None
+        assert data["type"] == "about:blank"
+        assert data["title"] == "Not Found"
+        assert data["status"] == 404
+        assert data["instance"] == f"/api/v1/users/{non_existent_id}"
