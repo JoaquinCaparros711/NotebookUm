@@ -99,7 +99,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 
 ### Pruebas para Historia de Usuario 2 (TDD - ESCRIBIR PRIMERO, ASEGURAR QUE FALLEN)
 
-- [ ] T031 [#324](https://github.com/JoaquinCaparros711/NotebookUm/issues/324) [P] [US2] Escribir prueba de contrato para POST /api/v1/documento/upload en tests/contract/test_documents_api.py (probar carga de PDF válido, probar rechazo de no-PDF, probar rechazo >25MB, probar confirmación asíncrona)
+- [x] T031 [#324](https://github.com/JoaquinCaparros711/NotebookUm/issues/324) [P] [US2] Escribir prueba de contrato para POST /api/v1/documento/upload en tests/contract/test_documents_api.py (probar carga de PDF válido, probar rechazo de no-PDF, probar rechazo >25MB, probar confirmación asíncrona)
 - [ ] T032 [#325](https://github.com/JoaquinCaparros711/NotebookUm/issues/325) [P] [US2] Escribir prueba de integración para extracción de PDF en tests/integration/test_pdf_extraction.py (probar que Docling extrae texto de PDF de muestra, probar manejo de errores para PDF corrupto)
 - [ ] T033 [#326](https://github.com/JoaquinCaparros711/NotebookUm/issues/326) [P] [US2] Escribir prueba de integración para generación de resumen en tests/integration/test_summary_generation.py (probar que OpenAI genera resumen del texto, probar resumen jerárquico para texto largo, probar soporte español/inglés)
 - [ ] T034 [#327](https://github.com/JoaquinCaparros711/NotebookUm/issues/327) [P] [US2] Escribir prueba de integración para procesamiento asíncrono en tests/integration/test_async_processing.py (probar ejecución de tarea Celery, probar actualizaciones de estado en base de datos)
