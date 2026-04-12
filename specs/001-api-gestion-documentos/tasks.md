@@ -79,7 +79,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T026 [#318](https://github.com/JoaquinCaparros711/NotebookUm/issues/318) [US1] Agregar endpoint GET /api/v1/users/{id} a app/routes/users.py (llamar UserService, retornar datos de usuario o 404)
 - [x] T027 [#319](https://github.com/JoaquinCaparros711/NotebookUm/issues/319) [US1] Registrar blueprint de usuarios en app/__init__.py
 - [x] T028 [#320](https://github.com/JoaquinCaparros711/NotebookUm/issues/320) [US1] Agregar validación de entrada para creación de usuario (formato de email, campos requeridos) en app/routes/users.py
-- [ ] T029 [#321](https://github.com/JoaquinCaparros711/NotebookUm/issues/321) [US1] Agregar manejo de errores con formato RFC 9457 para endpoints de usuario
+- [x] T029 [#321](https://github.com/JoaquinCaparros711/NotebookUm/issues/321) [US1] Agregar manejo de errores con formato RFC 9457 para endpoints de usuario
 - [ ] T030 [#322](https://github.com/JoaquinCaparros711/NotebookUm/issues/322) [US1] Ejecutar todas las pruebas de Historia de Usuario 1: `uv run pytest tests/contract/test_users_api.py tests/unit/test_models.py -v`
 
 **Punto de control**: En este punto, la Historia de Usuario 1 debería ser completamente funcional - los usuarios pueden crear cuentas y recuperar su información
