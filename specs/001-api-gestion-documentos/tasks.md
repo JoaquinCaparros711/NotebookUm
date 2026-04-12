@@ -76,7 +76,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T023 [#315](https://github.com/JoaquinCaparros711/NotebookUm/issues/315) [US1] Crear UserService en app/services/user_service.py (métodos create_user, get_user_by_id, validate_user_data)
 - [x] T024 [#316](https://github.com/JoaquinCaparros711/NotebookUm/issues/316) [US1] Escribir pruebas unitarias para UserService en tests/unit/test_services.py (probar create_user, probar get_user_by_id con db mockeada)
 - [x] T025 [#317](https://github.com/JoaquinCaparros711/NotebookUm/issues/317) [US1] Crear blueprint de usuarios en app/routes/users.py con endpoint POST /api/v1/users (validar entrada, llamar UserService, retornar JSON con ID de usuario)
-- [ ] T026 [#318](https://github.com/JoaquinCaparros711/NotebookUm/issues/318) [US1] Agregar endpoint GET /api/v1/users/{id} a app/routes/users.py (llamar UserService, retornar datos de usuario o 404)
+- [x] T026 [#318](https://github.com/JoaquinCaparros711/NotebookUm/issues/318) [US1] Agregar endpoint GET /api/v1/users/{id} a app/routes/users.py (llamar UserService, retornar datos de usuario o 404)
 - [ ] T027 [#319](https://github.com/JoaquinCaparros711/NotebookUm/issues/319) [US1] Registrar blueprint de usuarios en app/__init__.py
 - [ ] T028 [#320](https://github.com/JoaquinCaparros711/NotebookUm/issues/320) [US1] Agregar validación de entrada para creación de usuario (formato de email, campos requeridos) en app/routes/users.py
 - [ ] T029 [#321](https://github.com/JoaquinCaparros711/NotebookUm/issues/321) [US1] Agregar manejo de errores con formato RFC 9457 para endpoints de usuario
