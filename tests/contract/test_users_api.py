@@ -185,3 +185,51 @@ class TestGetUsers:
         assert data["title"] == "Not Found"
         assert data["status"] == 404
         assert data["instance"] == f"/api/v1/users/{non_existent_id}"
+
+
+@pytest.mark.contract
+class TestRFC9457Compliance:
+    """Tests to verify RFC 9457 Problem Details compliance"""
+
+    def test_error_response_content_type_bad_request(self, client):
+        """Test that error responses have application/problem+json content-type"""
+        # Given: Invalid user data (missing email)
+        user_data = {"nombre": "Test User"}
+
+        # When: POST request to /api/v1/users
+        response = client.post("/api/v1/users", json=user_data)
+
+        # Then: Content-Type is application/problem+json
+        assert response.content_type == "application/problem+json"
+        assert response.status_code == 400
+
+    def test_error_response_content_type_conflict(self, client):
+        """Test that conflict errors have application/problem+json content-type"""
+        # Given: An existing user
+        existing_user = {
+            "email": "rfc9457_test@example.com",
+            "nombre": "Test User"
+        }
+        response1 = client.post("/api/v1/users", json=existing_user)
+        assert response1.status_code == 201
+
+        # When: Attempting to create duplicate user
+        duplicate_user = {
+            "email": "rfc9457_test@example.com",
+            "nombre": "Duplicate User"
+        }
+        response2 = client.post("/api/v1/users", json=duplicate_user)
+
+        # Then: Content-Type is application/problem+json
+        assert response2.content_type == "application/problem+json"
+        assert response2.status_code == 409
+
+    def test_error_response_content_type_not_found(self, client):
+        """Test that not found errors have application/problem+json content-type"""
+        # When: GET request to non-existent user
+        response = client.get("/api/v1/users/99999")
+
+        # Then: Content-Type is application/problem+json
+        assert response.content_type == "application/problem+json"
+        assert response.status_code == 404
+
