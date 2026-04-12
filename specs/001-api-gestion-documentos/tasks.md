@@ -65,7 +65,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 ### Pruebas para Historia de Usuario 1 (TDD - ESCRIBIR PRIMERO, ASEGURAR QUE FALLEN)
 
 - [x] T017 [#309](https://github.com/JoaquinCaparros711/NotebookUm/issues/309) [P] [US1] Escribir prueba de contrato para POST /api/v1/users en tests/contract/test_users_api.py (probar creación exitosa, probar errores de validación, probar email duplicado)
-- [ ] T018 [#310](https://github.com/JoaquinCaparros711/NotebookUm/issues/310) [P] [US1] Escribir prueba de contrato para GET /api/v1/users/{id} en tests/contract/test_users_api.py (probar recuperación exitosa, probar 404 para usuario inexistente)
+- [x] T018 [#310](https://github.com/JoaquinCaparros711/NotebookUm/issues/310) [P] [US1] Escribir prueba de contrato para GET /api/v1/users/{id} en tests/contract/test_users_api.py (probar recuperación exitosa, probar 404 para usuario inexistente)
 - [ ] T019 [#311](https://github.com/JoaquinCaparros711/NotebookUm/issues/311) [P] [US1] Escribir prueba unitaria para modelo Usuario en tests/unit/test_models.py (probar creación del modelo, probar restricción de unicidad de email, probar timestamps)
 
 ### Implementación para Historia de Usuario 1
