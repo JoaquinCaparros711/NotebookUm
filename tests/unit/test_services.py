@@ -129,6 +129,30 @@ class TestUserServiceValidation:
 
         assert "valid JSON" in str(exc_info.value)
 
+    def test_validate_user_data_nombre_too_short(self):
+        """Test validate_user_data raises error when nombre is too short"""
+        # Given: Nombre with only 1 character
+        data = {"email": "test@example.com", "nombre": "X"}
+
+        # When: Calling validate_user_data
+        # Then: Raises ValidationError
+        with pytest.raises(ValidationError) as exc_info:
+            UserService.validate_user_data(data)
+
+        assert "at least 2 characters" in str(exc_info.value)
+
+    def test_validate_user_data_nombre_too_long(self):
+        """Test validate_user_data raises error when nombre exceeds max length"""
+        # Given: Nombre with more than 255 characters
+        data = {"email": "test@example.com", "nombre": "X" * 256}
+
+        # When: Calling validate_user_data
+        # Then: Raises ValidationError
+        with pytest.raises(ValidationError) as exc_info:
+            UserService.validate_user_data(data)
+
+        assert "must not exceed 255 characters" in str(exc_info.value)
+
 
 class TestUserServiceCreateUser:
     """Tests for UserService.create_user"""

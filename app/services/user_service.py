@@ -1,5 +1,6 @@
 """User service for business logic"""
 
+import re
 from typing import Optional, Dict, Any
 from app.database import db
 from app.models.user import User
@@ -41,8 +42,17 @@ class UserService:
         if not nombre:
             raise ValidationError("Name (nombre) is required")
 
-        if "@" not in email or "." not in email.split("@")[1]:
+        # RFC 5322 simplified email validation pattern
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
             raise ValidationError("Email format is invalid")
+
+        # Validate nombre length (reasonable bounds)
+        if len(nombre) > 255:
+            raise ValidationError("Name (nombre) must not exceed 255 characters")
+
+        if len(nombre) < 2:
+            raise ValidationError("Name (nombre) must be at least 2 characters")
 
         return {"email": email, "nombre": nombre}
 
