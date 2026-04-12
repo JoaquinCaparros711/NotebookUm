@@ -63,3 +63,31 @@ NotebookUm/
 ```
 
 Para instrucciones detalladas sobre las fases de implementación, pruebas en paralelo y estrategias MVP, consulte `specs/001-api-gestion-documentos/tasks.md` y `specs/001-api-gestion-documentos/plan.md`.
+
+# 🤖 Instrucciones para IA (Commit Guidelines)
+
+> **IMPORTANTE**: Antes de realizar cualquier commit, la IA debe validar los cambios contra la "Constitución de NotebookUM" y asegurarse de seguir este estándar de mensajes.
+
+## Estándar de Mensajes (Conventional Commits)
+
+Todos los commits deben seguir la estructura: `<type>(<scope>): <description>`
+
+### Tipos Permitidos
+* **feat**: (Nueva Función) Añade una nueva característica.
+    * *Ejemplo*: `feat(api): add 25MB file size validation`
+* **fix**: (Corrección) Resuelve un error o comportamiento inesperado.
+    * *Ejemplo*: `fix(db): resolve users table migration error`
+* **refactor**: (Estructura) Mejora el código sin cambiar su lógica externa.
+    * *Ejemplo*: `refactor: extract docling parsing to service layer`
+* **chore**: (Mantenimiento) Tareas rutinarias o de dependencias.
+    * *Ejemplo*: `chore(deps): update flask via uv`
+* **perf**: (Rendimiento) Optimización de velocidad o recursos.
+    * *Ejemplo*: `perf(ai): optimize nemotron inference latency`
+* **docs**: (Documentación) Cambios en README o manuales.
+    * *Ejemplo*: `docs: update api endpoint reference`
+
+## Reglas de Ejecución para la IA
+1.  **Language**: El mensaje del commit DEBE ser en **Inglés**.
+2.  **Mood**: Usar modo imperativo (ej. `add`, no `added` ni `adds`).
+3.  **Scope**: El "scope" entre paréntesis es opcional pero recomendado (api, db, ai, auth).
+4.  **No Markdown**: No usar formato markdown dentro del mensaje del commit (solo texto plano).
