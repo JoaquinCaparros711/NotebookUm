@@ -3,7 +3,7 @@
 from flask import Blueprint, request, jsonify
 from app.database import db
 from app.models.user import User
-from app.utils.errors import bad_request, conflict
+from app.utils.errors import bad_request, conflict, not_found
 
 users_bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
 
@@ -39,3 +39,17 @@ def create_user():
     response = jsonify(user.to_dict())
     response.status_code = 201
     return response
+
+
+@users_bp.get("/<int:user_id>")
+def get_user(user_id: int):
+    """Retrieve a user by ID"""
+    user = db.session.get(User, user_id)
+    
+    if not user:
+        return not_found(f"User with ID {user_id} not found", instance=f"/api/v1/users/{user_id}")
+    
+    response = jsonify(user.to_dict())
+    response.status_code = 200
+    return response
+
