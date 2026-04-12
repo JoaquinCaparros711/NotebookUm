@@ -72,7 +72,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 
 - [x] T020 [#312](https://github.com/JoaquinCaparros711/NotebookUm/issues/312) [US1] Crear modelo Usuario en app/models/user.py (id, email, nombre, created_at, updated_at con relaciones a documentos y preguntas)
 - [x] T021 [#313](https://github.com/JoaquinCaparros711/NotebookUm/issues/313) [US1] Crear migración Alembic para tabla usuarios
-- [ ] T022 [#314](https://github.com/JoaquinCaparros711/NotebookUm/issues/314) [US1] Ejecutar migración: `uv run alembic upgrade head`
+- [x] T022 [#314](https://github.com/JoaquinCaparros711/NotebookUm/issues/314) [US1] Ejecutar migración: `uv run alembic upgrade head`
 - [ ] T023 [#315](https://github.com/JoaquinCaparros711/NotebookUm/issues/315) [US1] Crear UserService en app/services/user_service.py (métodos create_user, get_user_by_id, validate_user_data)
 - [ ] T024 [#316](https://github.com/JoaquinCaparros711/NotebookUm/issues/316) [US1] Escribir pruebas unitarias para UserService en tests/unit/test_services.py (probar create_user, probar get_user_by_id con db mockeada)
 - [ ] T025 [#317](https://github.com/JoaquinCaparros711/NotebookUm/issues/317) [US1] Crear blueprint de usuarios en app/routes/users.py con endpoint POST /api/v1/users (validar entrada, llamar UserService, retornar JSON con ID de usuario)
