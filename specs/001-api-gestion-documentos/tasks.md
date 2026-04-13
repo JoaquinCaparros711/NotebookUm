@@ -107,7 +107,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 
 ### Implementación para Historia de Usuario 2
 
-- [ ] T036 [#329](https://github.com/JoaquinCaparros711/NotebookUm/issues/329) [P] [US2] Crear modelo HistorialDocumento en app/models/document.py (id, usuario_id, nombre_archivo, extracto_texto, tamanio_bytes, estado, created_at con relaciones a usuario y resúmenes)
+- [X] T036 [#329](https://github.com/JoaquinCaparros711/NotebookUm/issues/329) [P] [US2] Crear modelo HistorialDocumento en app/models/document.py (id, usuario_id, nombre_archivo, extracto_texto, tamanio_bytes, estado, created_at con relaciones a usuario y resúmenes)
 - [ ] T037 [#330](https://github.com/JoaquinCaparros711/NotebookUm/issues/330) [P] [US2] Crear modelo Resumen en app/models/summary.py (id, documento_id, contenido, modelo_utilizado, created_at con relación a documento)
 - [ ] T038 [#331](https://github.com/JoaquinCaparros711/NotebookUm/issues/331) [US2] Crear migración Alembic para tablas historial_documentos y resumenes
 - [ ] T039 [#332](https://github.com/JoaquinCaparros711/NotebookUm/issues/332) [US2] Ejecutar migración: `uv run alembic upgrade head`
