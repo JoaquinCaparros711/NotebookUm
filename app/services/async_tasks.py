@@ -39,12 +39,13 @@ def process_document_task(user_id: int, document_id: int, pdf_path: str) -> dict
 
 def _process_document_task_impl(user_id: int, document_id: int, pdf_path: str) -> dict:
     """Internal document processing implementation."""
+    _, processing_status, completed_status, failed_status = HistorialDocumento.ESTADOS_VALIDOS
     document = db.session.get(HistorialDocumento, document_id)
     if document is None:
-        return {"status": "failed", "document_id": document_id, "error": "Document not found"}
+        return {"status": failed_status, "document_id": document_id, "error": "Document not found"}
 
     try:
-        document.estado = "processing"
+        document.estado = processing_status
         db.session.commit()
 
         extraction_service = PDFExtractionService()
@@ -62,18 +63,18 @@ def _process_document_task_impl(user_id: int, document_id: int, pdf_path: str) -
             document_id=document.id,
             summary_text=summary_text,
             user_id=user_id,
-            status="completed",
+            status=completed_status,
         )
         db.session.add(summary)
 
-        document.estado = "completed"
+        document.estado = completed_status
         db.session.commit()
         return {
-            "status": "completed",
+            "status": completed_status,
             "document_id": document.id,
             "summary_id": summary.id,
         }
     except Exception as exc:
-        document.estado = "failed"
+        document.estado = failed_status
         db.session.commit()
-        return {"status": "failed", "document_id": document_id, "error": str(exc)}
+        return {"status": failed_status, "document_id": document_id, "error": str(exc)}
