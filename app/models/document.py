@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 
+from sqlalchemy import CheckConstraint
 from sqlalchemy.orm import foreign
 
 from app.database import db
@@ -12,13 +13,20 @@ class HistorialDocumento(db.Model):
     """Represents an uploaded document and its async processing lifecycle."""
 
     __tablename__ = "historial_documentos"
+    ESTADOS_VALIDOS = ("pending", "processing", "completed", "failed")
+    __table_args__ = (
+        CheckConstraint(
+            "estado IN ('pending', 'processing', 'completed', 'failed')",
+            name="ck_historial_documentos_estado",
+        ),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False, index=True)
     nombre_archivo = db.Column(db.String(255), nullable=False)
     extracto_texto = db.Column(db.Text, nullable=True)
     tamanio_bytes = db.Column(db.Integer, nullable=False)
-    estado = db.Column(db.String(20), nullable=False, default="pending")
+    estado = db.Column(db.String(20), nullable=False, default=ESTADOS_VALIDOS[0])
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     usuario = db.relationship("User", backref=db.backref("documentos", lazy=True))

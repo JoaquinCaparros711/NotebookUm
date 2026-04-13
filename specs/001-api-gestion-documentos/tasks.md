@@ -119,7 +119,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [X] T045 [#338](https://github.com/JoaquinCaparros711/NotebookUm/issues/338) [US2] Agregar endpoint GET /api/v1/documento/{document_id}/status para consultar estado de procesamiento
 - [X] T046 [#339](https://github.com/JoaquinCaparros711/NotebookUm/issues/339) [US2] Registrar blueprint de documentos en app/__init__.py
 - [X] T047 [#340](https://github.com/JoaquinCaparros711/NotebookUm/issues/340) [US2] Agregar manejo integral de errores para endpoint de carga (error no-PDF, error de límite de tamaño con RFC 9457, errores de procesamiento)
-- [ ] T048 [#341](https://github.com/JoaquinCaparros711/NotebookUm/issues/341) [US2] Actualizar modelo HistorialDocumento con campo estado (pending, processing, completed, failed)
+- [X] T048 [#341](https://github.com/JoaquinCaparros711/NotebookUm/issues/341) [US2] Actualizar modelo HistorialDocumento con campo estado (pending, processing, completed, failed)
 - [ ] T049 [#342](https://github.com/JoaquinCaparros711/NotebookUm/issues/342) [US2] Actualizar tarea asíncrona para actualizar campo estado durante el ciclo de vida del procesamiento
 - [ ] T050 [#343](https://github.com/JoaquinCaparros711/NotebookUm/issues/343) [US2] Ejecutar todas las pruebas de Historia de Usuario 2: `uv run pytest tests/contract/test_documents_api.py tests/integration/ -v`
 
