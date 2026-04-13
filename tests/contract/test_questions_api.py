@@ -9,6 +9,10 @@ from app.database import db
 
 
 QUESTIONS_ENDPOINT = "/api/v1/preguntas"
+QUESTION_DETAIL_ENDPOINT = "/api/v1/pregunta"
+USERS_ENDPOINT = "/api/v1/users"
+DOCUMENT_UPLOAD_ENDPOINT = "/api/v1/documento/upload"
+PDF_BYTES = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"
 
 
 @pytest.fixture
@@ -29,39 +33,66 @@ def client(app):
     return app.test_client()
 
 
+def _pdf_upload_data(filename):
+    return {"file": (io.BytesIO(PDF_BYTES), filename, "application/pdf")}
+
+
+def _create_user(client, email, nombre):
+    response = client.post(USERS_ENDPOINT, json={"email": email, "nombre": nombre})
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data is not None
+    return data["id"]
+
+
+def _upload_document(client, filename):
+    response = client.post(
+        DOCUMENT_UPLOAD_ENDPOINT,
+        data=_pdf_upload_data(filename),
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 202
+    data = response.get_json()
+    assert data is not None
+    return data["document_id"]
+
+
+def _create_question(client, user_id, document_id, pregunta):
+    response = client.post(
+        QUESTIONS_ENDPOINT,
+        json={
+            "user_id": user_id,
+            "document_id": document_id,
+            "pregunta": pregunta,
+        },
+    )
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data is not None
+    return data
+
+
+def _assert_problem_details(response, expected_status, expected_title, expected_instance):
+    assert response.status_code == expected_status
+    assert response.content_type == "application/problem+json"
+    data = response.get_json()
+    assert data is not None
+    assert data["type"] == "about:blank"
+    assert data["title"] == expected_title
+    assert data["status"] == expected_status
+    assert data["instance"] == expected_instance
+    return data
+
+
 @pytest.mark.contract
 class TestPostQuestions:
     """Contract tests for POST /api/v1/preguntas."""
 
     def test_create_question_success(self, client):
         """Creating a question with valid payload returns 201 and question data."""
-        # Given: A created user
-        user_payload = {"email": "qtest@example.com", "nombre": "Question Tester"}
-        user_resp = client.post("/api/v1/users", json=user_payload)
-        assert user_resp.status_code == 201
-        user = user_resp.get_json()
-        user_id = user["id"]
+        user_id = _create_user(client, "qtest@example.com", "Question Tester")
+        document_id = _upload_document(client, "doc_for_question.pdf")
 
-        # And: An uploaded document
-        file_data = {
-            "file": (
-                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
-                "doc_for_question.pdf",
-                "application/pdf",
-            )
-        }
-        doc_resp = client.post(
-            "/api/v1/documento/upload",
-            data=file_data,
-            content_type="multipart/form-data",
-        )
-        assert doc_resp.status_code == 202
-        doc_data = doc_resp.get_json()
-        assert doc_data is not None
-        assert "document_id" in doc_data
-        document_id = doc_data["document_id"]
-
-        # When: Posting a valid question
         question_payload = {
             "user_id": user_id,
             "document_id": document_id,
@@ -69,7 +100,6 @@ class TestPostQuestions:
         }
         resp = client.post(QUESTIONS_ENDPOINT, json=question_payload)
 
-        # Then: Returns 201 Created
         assert resp.status_code == 201
         data = resp.get_json()
         assert data is not None
@@ -82,41 +112,14 @@ class TestPostQuestions:
 
     def test_create_question_missing_pregunta_returns_400(self, client):
         """Missing 'pregunta' field must return a 400 RFC9457 problem detail."""
-        # Given: A created user and uploaded document
-        user_payload = {"email": "qval@example.com", "nombre": "Q Validator"}
-        user_resp = client.post("/api/v1/users", json=user_payload)
-        assert user_resp.status_code == 201
-        user_id = user_resp.get_json()["id"]
+        user_id = _create_user(client, "qval@example.com", "Q Validator")
+        document_id = _upload_document(client, "doc_for_qval.pdf")
 
-        file_data = {
-            "file": (
-                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
-                "doc_for_qval.pdf",
-                "application/pdf",
-            )
-        }
-        doc_resp = client.post(
-            "/api/v1/documento/upload",
-            data=file_data,
-            content_type="multipart/form-data",
-        )
-        assert doc_resp.status_code == 202
-        document_id = doc_resp.get_json()["document_id"]
-
-        # When: Posting a question without 'pregunta'
         invalid_payload = {"user_id": user_id, "document_id": document_id}
         resp = client.post(QUESTIONS_ENDPOINT, json=invalid_payload)
 
-        # Then: Returns 400 Bad Request with RFC 9457 problem details
-        assert resp.status_code == 400
-        assert resp.content_type == "application/problem+json"
-        data = resp.get_json()
-        assert data is not None
-        assert data["type"] == "about:blank"
-        assert data["title"] == "Bad Request"
-        assert data["status"] == 400
+        data = _assert_problem_details(resp, 400, "Bad Request", QUESTIONS_ENDPOINT)
         assert "pregunta" in data["detail"].lower()
-        assert data["instance"] == QUESTIONS_ENDPOINT
 
 
 @pytest.mark.contract
@@ -125,103 +128,41 @@ class TestGetQuestions:
 
     def test_list_questions_for_user(self, client):
         """Listing questions for a user returns only their questions."""
-        # Arrange: create two users and two documents
-        u1 = client.post("/api/v1/users", json={"email": "list_user1@example.com", "nombre": "List One"})
-        assert u1.status_code == 201
-        user1_id = u1.get_json()["id"]
+        user1_id = _create_user(client, "list_user1@example.com", "List One")
+        user2_id = _create_user(client, "list_user2@example.com", "List Two")
+        doc1_id = _upload_document(client, "list_doc1.pdf")
+        doc2_id = _upload_document(client, "list_doc2.pdf")
 
-        u2 = client.post("/api/v1/users", json={"email": "list_user2@example.com", "nombre": "List Two"})
-        assert u2.status_code == 201
-        user2_id = u2.get_json()["id"]
+        _create_question(client, user1_id, doc1_id, "Pregunta A")
+        _create_question(client, user1_id, doc2_id, "Pregunta B")
+        _create_question(client, user2_id, doc1_id, "Otra pregunta")
 
-        # upload two documents
-        file_data1 = {
-            "file": (
-                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
-                "list_doc1.pdf",
-                "application/pdf",
-            )
-        }
-        d1 = client.post("/api/v1/documento/upload", data=file_data1, content_type="multipart/form-data")
-        assert d1.status_code == 202
-        doc1_id = d1.get_json()["document_id"]
-
-        file_data2 = {
-            "file": (
-                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
-                "list_doc2.pdf",
-                "application/pdf",
-            )
-        }
-        d2 = client.post("/api/v1/documento/upload", data=file_data2, content_type="multipart/form-data")
-        assert d2.status_code == 202
-        doc2_id = d2.get_json()["document_id"]
-
-        # Create questions: two for user1 (one per document), one for user2
-        q1 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user1_id, "document_id": doc1_id, "pregunta": "Pregunta A"})
-        assert q1.status_code == 201
-        q2 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user1_id, "document_id": doc2_id, "pregunta": "Pregunta B"})
-        assert q2.status_code == 201
-        q3 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user2_id, "document_id": doc1_id, "pregunta": "Otra pregunta"})
-        assert q3.status_code == 201
-
-        # Act: List questions as user1 using X-User-ID header (mock auth)
         resp = client.get(QUESTIONS_ENDPOINT, headers={"X-User-ID": str(user1_id)})
 
-        # Assert
         assert resp.status_code == 200
         assert resp.content_type == "application/json"
         data = resp.get_json()
         assert isinstance(data, list)
-        # should contain only the two questions created by user1
         assert any(q.get("pregunta") == "Pregunta A" for q in data)
         assert any(q.get("pregunta") == "Pregunta B" for q in data)
         assert all(q.get("user_id") == user1_id for q in data)
 
     def test_filter_questions_by_document_id(self, client):
         """Filtering questions by document_id returns only questions for that document."""
-        # Arrange: create a user and two documents
-        u = client.post("/api/v1/users", json={"email": "filter_user@example.com", "nombre": "Filter User"})
-        assert u.status_code == 201
-        user_id = u.get_json()["id"]
+        user_id = _create_user(client, "filter_user@example.com", "Filter User")
+        doc1_id = _upload_document(client, "filter_doc1.pdf")
+        doc2_id = _upload_document(client, "filter_doc2.pdf")
 
-        file_data1 = {
-            "file": (
-                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
-                "filter_doc1.pdf",
-                "application/pdf",
-            )
-        }
-        d1 = client.post("/api/v1/documento/upload", data=file_data1, content_type="multipart/form-data")
-        assert d1.status_code == 202
-        doc1_id = d1.get_json()["document_id"]
+        _create_question(client, user_id, doc1_id, "Doc1 pregunta")
+        _create_question(client, user_id, doc2_id, "Doc2 pregunta")
 
-        file_data2 = {
-            "file": (
-                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
-                "filter_doc2.pdf",
-                "application/pdf",
-            )
-        }
-        d2 = client.post("/api/v1/documento/upload", data=file_data2, content_type="multipart/form-data")
-        assert d2.status_code == 202
-        doc2_id = d2.get_json()["document_id"]
-
-        # Create questions for both documents
-        q1 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user_id, "document_id": doc1_id, "pregunta": "Doc1 pregunta"})
-        assert q1.status_code == 201
-        q2 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user_id, "document_id": doc2_id, "pregunta": "Doc2 pregunta"})
-        assert q2.status_code == 201
-
-        # Act: Filter by document_id for doc1
         resp = client.get(f"{QUESTIONS_ENDPOINT}?document_id={doc1_id}", headers={"X-User-ID": str(user_id)})
 
-        # Assert: only the question for doc1 is returned
         assert resp.status_code == 200
         assert resp.content_type == "application/json"
         data = resp.get_json()
         assert isinstance(data, list)
-        assert len(data) >= 1
+        assert len(data) == 1
         assert all(q.get("document_id") == doc1_id for q in data)
 
 
@@ -231,32 +172,14 @@ class TestPatchQuestion:
 
     def test_update_question_and_answer_success(self, client):
         """PATCH updates pregunta and respuesta and returns 200 with updated resource."""
-        # Arrange: create user, upload document and create question
-        u = client.post("/api/v1/users", json={"email": "patch_user@example.com", "nombre": "Patch User"})
-        assert u.status_code == 201
-        user_id = u.get_json()["id"]
-
-        file_data = {
-            "file": (
-                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
-                "patch_doc.pdf",
-                "application/pdf",
-            )
-        }
-        d = client.post("/api/v1/documento/upload", data=file_data, content_type="multipart/form-data")
-        assert d.status_code == 202
-        document_id = d.get_json()["document_id"]
-
-        q = client.post(QUESTIONS_ENDPOINT, json={"user_id": user_id, "document_id": document_id, "pregunta": "Pregunta inicial"})
-        assert q.status_code == 201
-        question = q.get_json()
+        user_id = _create_user(client, "patch_user@example.com", "Patch User")
+        document_id = _upload_document(client, "patch_doc.pdf")
+        question = _create_question(client, user_id, document_id, "Pregunta inicial")
         question_id = question["id"]
 
-        # Act: Patch the question to update pregunta and respuesta
         patch_payload = {"pregunta": "Pregunta actualizada", "respuesta": "Respuesta generada"}
-        resp = client.patch(f"/api/v1/pregunta/{question_id}", json=patch_payload)
+        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}", json=patch_payload)
 
-        # Assert: 200 OK and fields updated
         assert resp.status_code == 200
         assert resp.content_type == "application/json"
         data = resp.get_json()
@@ -270,18 +193,9 @@ class TestPatchQuestion:
 
     def test_update_nonexistent_question_returns_404(self, client):
         """PATCH to a non-existent question id returns 404 RFC 9457 problem detail."""
-        # Act: attempt to patch a non-existent question
-        resp = client.patch("/api/v1/pregunta/999999", json={"pregunta": "x"})
+        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/999999", json={"pregunta": "x"})
 
-        # Assert: 404 Not Found with problem details
-        assert resp.status_code == 404
-        assert resp.content_type == "application/problem+json"
-        data = resp.get_json()
-        assert data is not None
-        assert data["type"] == "about:blank"
-        assert data["title"] == "Not Found"
-        assert data["status"] == 404
-        assert data["instance"] == "/api/v1/pregunta/999999"
+        _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/999999")
 
 
 @pytest.mark.contract
@@ -290,46 +204,20 @@ class TestDeleteQuestion:
 
     def test_delete_question_success(self, client):
         """DELETE removes the question and returns 204 No Content."""
-        # Arrange: create user, upload document and create question
-        u = client.post("/api/v1/users", json={"email": "del_user@example.com", "nombre": "Del User"})
-        assert u.status_code == 201
-        user_id = u.get_json()["id"]
+        user_id = _create_user(client, "del_user@example.com", "Del User")
+        document_id = _upload_document(client, "del_doc.pdf")
+        question = _create_question(client, user_id, document_id, "Pregunta a eliminar")
+        question_id = question["id"]
 
-        file_data = {
-            "file": (
-                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
-                "del_doc.pdf",
-                "application/pdf",
-            )
-        }
-        d = client.post("/api/v1/documento/upload", data=file_data, content_type="multipart/form-data")
-        assert d.status_code == 202
-        document_id = d.get_json()["document_id"]
+        resp = client.delete(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
 
-        q = client.post(QUESTIONS_ENDPOINT, json={"user_id": user_id, "document_id": document_id, "pregunta": "Pregunta a eliminar"})
-        assert q.status_code == 201
-        question_id = q.get_json()["id"]
-
-        # Act: delete the question
-        resp = client.delete(f"/api/v1/pregunta/{question_id}")
-
-        # Assert: 204 No Content and subsequent GET returns 404
         assert resp.status_code in (200, 204)
 
-        get_resp = client.get(f"/api/v1/pregunta/{question_id}")
+        get_resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
         assert get_resp.status_code == 404
 
     def test_delete_nonexistent_question_returns_404(self, client):
         """DELETE to a non-existent question returns 404 RFC 9457 problem detail."""
-        # Act: attempt to delete non-existent question
-        resp = client.delete("/api/v1/pregunta/999999")
+        resp = client.delete(f"{QUESTION_DETAIL_ENDPOINT}/999999")
 
-        # Assert: 404 Not Found with problem details
-        assert resp.status_code == 404
-        assert resp.content_type == "application/problem+json"
-        data = resp.get_json()
-        assert data is not None
-        assert data["type"] == "about:blank"
-        assert data["title"] == "Not Found"
-        assert data["status"] == 404
-        assert data["instance"] == "/api/v1/pregunta/999999"
+        _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/999999")
