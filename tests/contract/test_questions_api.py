@@ -223,3 +223,62 @@ class TestGetQuestions:
         assert isinstance(data, list)
         assert len(data) >= 1
         assert all(q.get("document_id") == doc1_id for q in data)
+
+
+@pytest.mark.contract
+class TestPatchQuestion:
+    """Contract tests for PATCH /api/v1/pregunta/{id} (update pregunta/respuesta)."""
+
+    def test_update_question_and_answer_success(self, client):
+        """PATCH updates pregunta and respuesta and returns 200 with updated resource."""
+        # Arrange: create user, upload document and create question
+        u = client.post("/api/v1/users", json={"email": "patch_user@example.com", "nombre": "Patch User"})
+        assert u.status_code == 201
+        user_id = u.get_json()["id"]
+
+        file_data = {
+            "file": (
+                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+                "patch_doc.pdf",
+                "application/pdf",
+            )
+        }
+        d = client.post("/api/v1/documento/upload", data=file_data, content_type="multipart/form-data")
+        assert d.status_code == 202
+        document_id = d.get_json()["document_id"]
+
+        q = client.post(QUESTIONS_ENDPOINT, json={"user_id": user_id, "document_id": document_id, "pregunta": "Pregunta inicial"})
+        assert q.status_code == 201
+        question = q.get_json()
+        question_id = question["id"]
+
+        # Act: Patch the question to update pregunta and respuesta
+        patch_payload = {"pregunta": "Pregunta actualizada", "respuesta": "Respuesta generada"}
+        resp = client.patch(f"/api/v1/pregunta/{question_id}", json=patch_payload)
+
+        # Assert: 200 OK and fields updated
+        assert resp.status_code == 200
+        assert resp.content_type == "application/json"
+        data = resp.get_json()
+        assert data is not None
+        assert data.get("id") == question_id
+        assert data.get("pregunta") == "Pregunta actualizada"
+        assert data.get("respuesta") == "Respuesta generada"
+        assert data.get("user_id") == user_id
+        assert data.get("document_id") == document_id
+        assert "updated_at" in data
+
+    def test_update_nonexistent_question_returns_404(self, client):
+        """PATCH to a non-existent question id returns 404 RFC 9457 problem detail."""
+        # Act: attempt to patch a non-existent question
+        resp = client.patch("/api/v1/pregunta/999999", json={"pregunta": "x"})
+
+        # Assert: 404 Not Found with problem details
+        assert resp.status_code == 404
+        assert resp.content_type == "application/problem+json"
+        data = resp.get_json()
+        assert data is not None
+        assert data["type"] == "about:blank"
+        assert data["title"] == "Not Found"
+        assert data["status"] == 404
+        assert data["instance"] == "/api/v1/pregunta/999999"
