@@ -15,6 +15,7 @@ from app.services.validation import (
     validate_file_size,
     validate_pdf_content_type,
 )
+from app.utils.errors import not_found
 
 documents_bp = Blueprint("documents", __name__, url_prefix="/api/v1/documento")
 
@@ -75,3 +76,25 @@ def upload_document():
         "status_url": f"/api/v1/documento/{document.id}/status",
     }
     return jsonify(response), 202
+
+
+@documents_bp.route("/<int:document_id>/status", methods=["GET"])
+def get_document_status(document_id: int):
+    """Return current processing status for an uploaded document."""
+    document = db.session.get(HistorialDocumento, document_id)
+    if document is None:
+        return not_found(
+            detail=f"Document with ID {document_id} not found",
+            instance=f"/api/v1/documento/{document_id}/status",
+        )
+
+    return (
+        jsonify(
+            {
+                "document_id": document.id,
+                "status": document.estado,
+                "created_at": document.created_at.isoformat() if document.created_at else None,
+            }
+        ),
+        200,
+    )
