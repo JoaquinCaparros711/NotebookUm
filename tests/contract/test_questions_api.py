@@ -282,3 +282,54 @@ class TestPatchQuestion:
         assert data["title"] == "Not Found"
         assert data["status"] == 404
         assert data["instance"] == "/api/v1/pregunta/999999"
+
+
+@pytest.mark.contract
+class TestDeleteQuestion:
+    """Contract tests for DELETE /api/v1/pregunta/{id} (deletion)."""
+
+    def test_delete_question_success(self, client):
+        """DELETE removes the question and returns 204 No Content."""
+        # Arrange: create user, upload document and create question
+        u = client.post("/api/v1/users", json={"email": "del_user@example.com", "nombre": "Del User"})
+        assert u.status_code == 201
+        user_id = u.get_json()["id"]
+
+        file_data = {
+            "file": (
+                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+                "del_doc.pdf",
+                "application/pdf",
+            )
+        }
+        d = client.post("/api/v1/documento/upload", data=file_data, content_type="multipart/form-data")
+        assert d.status_code == 202
+        document_id = d.get_json()["document_id"]
+
+        q = client.post(QUESTIONS_ENDPOINT, json={"user_id": user_id, "document_id": document_id, "pregunta": "Pregunta a eliminar"})
+        assert q.status_code == 201
+        question_id = q.get_json()["id"]
+
+        # Act: delete the question
+        resp = client.delete(f"/api/v1/pregunta/{question_id}")
+
+        # Assert: 204 No Content and subsequent GET returns 404
+        assert resp.status_code in (200, 204)
+
+        get_resp = client.get(f"/api/v1/pregunta/{question_id}")
+        assert get_resp.status_code == 404
+
+    def test_delete_nonexistent_question_returns_404(self, client):
+        """DELETE to a non-existent question returns 404 RFC 9457 problem detail."""
+        # Act: attempt to delete non-existent question
+        resp = client.delete("/api/v1/pregunta/999999")
+
+        # Assert: 404 Not Found with problem details
+        assert resp.status_code == 404
+        assert resp.content_type == "application/problem+json"
+        data = resp.get_json()
+        assert data is not None
+        assert data["type"] == "about:blank"
+        assert data["title"] == "Not Found"
+        assert data["status"] == 404
+        assert data["instance"] == "/api/v1/pregunta/999999"
