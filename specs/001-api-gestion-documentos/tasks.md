@@ -103,25 +103,25 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T032 [#325](https://github.com/JoaquinCaparros711/NotebookUm/issues/325) [P] [US2] Escribir prueba de integración para extracción de PDF en tests/integration/test_pdf_extraction.py (probar que Docling extrae texto de PDF de muestra, probar manejo de errores para PDF corrupto)
 - [x] T033 [#326](https://github.com/JoaquinCaparros711/NotebookUm/issues/326) [P] [US2] Escribir prueba de integración para generación de resumen en tests/integration/test_summary_generation.py (probar que OpenAI genera resumen del texto, probar resumen jerárquico para texto largo, probar soporte español/inglés)
 - [x] T034 [#327](https://github.com/JoaquinCaparros711/NotebookUm/issues/327) [P] [US2] Escribir prueba de integración para procesamiento asíncrono en tests/integration/test_async_processing.py (probar ejecución de tarea Celery, probar actualizaciones de estado en base de datos)
-- [ ] T035 [#328](https://github.com/JoaquinCaparros711/NotebookUm/issues/328) [P] [US2] Escribir prueba unitaria para validación de archivos en tests/unit/test_validation.py (probar verificación de content-type PDF, probar verificación de tamaño, probar mensajes de error)
+- [x] T035 [#328](https://github.com/JoaquinCaparros711/NotebookUm/issues/328) [P] [US2] Escribir prueba unitaria para validación de archivos en tests/unit/test_validation.py (probar verificación de content-type PDF, probar verificación de tamaño, probar mensajes de error)
 
 ### Implementación para Historia de Usuario 2
 
-- [X] T036 [#329](https://github.com/JoaquinCaparros711/NotebookUm/issues/329) [P] [US2] Crear modelo HistorialDocumento en app/models/document.py (id, usuario_id, nombre_archivo, extracto_texto, tamanio_bytes, estado, created_at con relaciones a usuario y resúmenes)
-- [X] T037 [#330](https://github.com/JoaquinCaparros711/NotebookUm/issues/330) [P] [US2] Crear modelo Resumen en app/models/summary.py (id, documento_id, contenido, modelo_utilizado, created_at con relación a documento)
-- [X] T038 [#331](https://github.com/JoaquinCaparros711/NotebookUm/issues/331) [US2] Crear migración Alembic para tablas historial_documentos y resumenes
-- [X] T039 [#332](https://github.com/JoaquinCaparros711/NotebookUm/issues/332) [US2] Ejecutar migración: `uv run alembic upgrade head`
-- [X] T040 [#333](https://github.com/JoaquinCaparros711/NotebookUm/issues/333) [US2] Crear app/services/validation.py con funciones de validación de archivos (validate_pdf_content_type, validate_file_size, create_rfc9457_error)
-- [X] T041 [#334](https://github.com/JoaquinCaparros711/NotebookUm/issues/334) [US2] Crear app/services/pdf_service.py con integración Docling (función extract_text_from_pdf con manejo de errores para archivos corruptos)
-- [X] T042 [#335](https://github.com/JoaquinCaparros711/NotebookUm/issues/335) [US2] Crear app/services/summary_service.py con integración OpenAI (initialize_openai_client, detect_language, summarize_text, hierarchical_summarize para textos largos con lógica de reintento)
-- [X] T043 [#336](https://github.com/JoaquinCaparros711/NotebookUm/issues/336) [US2] Configurar Celery en app/services/async_tasks.py (configurar broker, crear process_document_task que llama a pdf_service y summary_service)
-- [X] T044 [#337](https://github.com/JoaquinCaparros711/NotebookUm/issues/337) [US2] Crear blueprint de documentos en app/routes/documents.py con endpoint POST /api/v1/documento/upload (validar archivo, guardar metadata, encolar tarea asíncrona, retornar estado de procesamiento)
-- [X] T045 [#338](https://github.com/JoaquinCaparros711/NotebookUm/issues/338) [US2] Agregar endpoint GET /api/v1/documento/{document_id}/status para consultar estado de procesamiento
-- [X] T046 [#339](https://github.com/JoaquinCaparros711/NotebookUm/issues/339) [US2] Registrar blueprint de documentos en app/__init__.py
-- [X] T047 [#340](https://github.com/JoaquinCaparros711/NotebookUm/issues/340) [US2] Agregar manejo integral de errores para endpoint de carga (error no-PDF, error de límite de tamaño con RFC 9457, errores de procesamiento)
-- [X] T048 [#341](https://github.com/JoaquinCaparros711/NotebookUm/issues/341) [US2] Actualizar modelo HistorialDocumento con campo estado (pending, processing, completed, failed)
-- [X] T049 [#342](https://github.com/JoaquinCaparros711/NotebookUm/issues/342) [US2] Actualizar tarea asíncrona para actualizar campo estado durante el ciclo de vida del procesamiento
-- [X] T050 [#343](https://github.com/JoaquinCaparros711/NotebookUm/issues/343) [US2] Ejecutar todas las pruebas de Historia de Usuario 2: `uv run pytest tests/contract/test_documents_api.py tests/integration/ -v`
+- [x] T036 [#329](https://github.com/JoaquinCaparros711/NotebookUm/issues/329) [P] [US2] Crear modelo HistorialDocumento en app/models/document.py (id, usuario_id, nombre_archivo, extracto_texto, tamanio_bytes, estado, created_at con relaciones a usuario y resúmenes)
+- [x] T037 [#330](https://github.com/JoaquinCaparros711/NotebookUm/issues/330) [P] [US2] Crear modelo Resumen en app/models/summary.py (id, documento_id, contenido, modelo_utilizado, created_at con relación a documento)
+- [x] T038 [#331](https://github.com/JoaquinCaparros711/NotebookUm/issues/331) [US2] Crear migración Alembic para tablas historial_documentos y resumenes
+- [x] T039 [#332](https://github.com/JoaquinCaparros711/NotebookUm/issues/332) [US2] Ejecutar migración: `uv run alembic upgrade head`
+- [x] T040 [#333](https://github.com/JoaquinCaparros711/NotebookUm/issues/333) [US2] Crear app/services/validation.py con funciones de validación de archivos (validate_pdf_content_type, validate_file_size, create_rfc9457_error)
+- [x] T041 [#334](https://github.com/JoaquinCaparros711/NotebookUm/issues/334) [US2] Crear app/services/pdf_service.py con integración Docling (función extract_text_from_pdf con manejo de errores para archivos corruptos)
+- [x] T042 [#335](https://github.com/JoaquinCaparros711/NotebookUm/issues/335) [US2] Crear app/services/summary_service.py con integración OpenAI (initialize_openai_client, detect_language, summarize_text, hierarchical_summarize para textos largos con lógica de reintento)
+- [x] T043 [#336](https://github.com/JoaquinCaparros711/NotebookUm/issues/336) [US2] Configurar Celery en app/services/async_tasks.py (configurar broker, crear process_document_task que llama a pdf_service y summary_service)
+- [x] T044 [#337](https://github.com/JoaquinCaparros711/NotebookUm/issues/337) [US2] Crear blueprint de documentos en app/routes/documents.py con endpoint POST /api/v1/documento/upload (validar archivo, guardar metadata, encolar tarea asíncrona, retornar estado de procesamiento)
+- [x] T045 [#338](https://github.com/JoaquinCaparros711/NotebookUm/issues/338) [US2] Agregar endpoint GET /api/v1/documento/{document_id}/status para consultar estado de procesamiento
+- [x] T046 [#339](https://github.com/JoaquinCaparros711/NotebookUm/issues/339) [US2] Registrar blueprint de documentos en app/__init__.py
+- [x] T047 [#340](https://github.com/JoaquinCaparros711/NotebookUm/issues/340) [US2] Agregar manejo integral de errores para endpoint de carga (error no-PDF, error de límite de tamaño con RFC 9457, errores de procesamiento)
+- [x] T048 [#341](https://github.com/JoaquinCaparros711/NotebookUm/issues/341) [US2] Actualizar modelo HistorialDocumento con campo estado (pending, processing, completed, failed)
+- [x] T049 [#342](https://github.com/JoaquinCaparros711/NotebookUm/issues/342) [US2] Actualizar tarea asíncrona para actualizar campo estado durante el ciclo de vida del procesamiento
+- [x] T050 [#343](https://github.com/JoaquinCaparros711/NotebookUm/issues/343) [US2] Ejecutar todas las pruebas de Historia de Usuario 2: `uv run pytest tests/contract/test_documents_api.py tests/integration/ -v`
 
 **Punto de control**: En este punto, la Historia de Usuario 2 debería ser completamente funcional - los usuarios pueden cargar PDFs y el sistema los procesa asincrónicamente
 
