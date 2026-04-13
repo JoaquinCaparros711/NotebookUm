@@ -136,3 +136,36 @@ class TestUploadDocuments:
         assert data["status"] in {"pending", "processing"}
         assert "status_url" in data
 
+    def test_upload_processing_error_returns_500_problem_details(self, client, monkeypatch):
+        """Queue/processing enqueue failures must return RFC 9457 500 response."""
+        from app.routes.documents import process_document_task
+
+        def _raise_enqueue_error(*args, **kwargs):
+            raise RuntimeError("queue unavailable")
+
+        monkeypatch.setattr(process_document_task, "delay", _raise_enqueue_error)
+
+        file_data = {
+            "file": (
+                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+                "enqueue_error.pdf",
+                "application/pdf",
+            )
+        }
+
+        response = client.post(
+            UPLOAD_ENDPOINT,
+            data=file_data,
+            content_type="multipart/form-data",
+        )
+
+        assert response.status_code == 500
+        assert response.content_type == "application/problem+json"
+
+        data = response.get_json()
+        assert data is not None
+        assert data["type"] == "about:blank"
+        assert data["title"] == "Internal Server Error"
+        assert data["status"] == 500
+        assert data["instance"] == UPLOAD_ENDPOINT
+

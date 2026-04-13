@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import os
 import tempfile
 from pathlib import Path
 
+from celery.exceptions import CeleryError
 from flask import Blueprint, current_app, jsonify, request
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import db
 from app.models.document import HistorialDocumento
@@ -15,7 +18,7 @@ from app.services.validation import (
     validate_file_size,
     validate_pdf_content_type,
 )
-from app.utils.errors import not_found
+from app.utils.errors import internal_server_error, not_found
 
 documents_bp = Blueprint("documents", __name__, url_prefix="/api/v1/documento")
 
@@ -50,9 +53,15 @@ def upload_document():
 
     file.stream.seek(0)
     suffix = Path(file.filename).suffix or ".pdf"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-        file.save(tmp_file)
-        temp_pdf_path = tmp_file.name
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+            file.save(tmp_file)
+            temp_pdf_path = tmp_file.name
+    except OSError:
+        return internal_server_error(
+            detail="Unable to store uploaded file for processing.",
+            instance="/api/v1/documento/upload",
+        )
 
     document = HistorialDocumento(
         usuario_id=usuario_id,
@@ -60,14 +69,34 @@ def upload_document():
         tamanio_bytes=file.content_length or Path(temp_pdf_path).stat().st_size,
         estado="pending",
     )
-    db.session.add(document)
-    db.session.commit()
+    try:
+        db.session.add(document)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        _safe_delete(temp_pdf_path)
+        return internal_server_error(
+            detail="Unable to persist document metadata.",
+            instance="/api/v1/documento/upload",
+        )
 
-    task_result = process_document_task.delay(
-        user_id=usuario_id,
-        document_id=document.id,
-        pdf_path=temp_pdf_path,
-    )
+    try:
+        task_result = process_document_task.delay(
+            user_id=usuario_id,
+            document_id=document.id,
+            pdf_path=temp_pdf_path,
+        )
+    except (CeleryError, RuntimeError):
+        document.estado = "failed"
+        try:
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+        _safe_delete(temp_pdf_path)
+        return internal_server_error(
+            detail="Unable to enqueue document processing task.",
+            instance="/api/v1/documento/upload",
+        )
 
     response = {
         "document_id": document.id,
@@ -98,3 +127,9 @@ def get_document_status(document_id: int):
         ),
         200,
     )
+
+
+def _safe_delete(path: str) -> None:
+    """Delete a temporary file if it exists."""
+    if os.path.exists(path):
+        os.remove(path)
