@@ -111,7 +111,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [X] T037 [#330](https://github.com/JoaquinCaparros711/NotebookUm/issues/330) [P] [US2] Crear modelo Resumen en app/models/summary.py (id, documento_id, contenido, modelo_utilizado, created_at con relación a documento)
 - [X] T038 [#331](https://github.com/JoaquinCaparros711/NotebookUm/issues/331) [US2] Crear migración Alembic para tablas historial_documentos y resumenes
 - [X] T039 [#332](https://github.com/JoaquinCaparros711/NotebookUm/issues/332) [US2] Ejecutar migración: `uv run alembic upgrade head`
-- [ ] T040 [#333](https://github.com/JoaquinCaparros711/NotebookUm/issues/333) [US2] Crear app/services/validation.py con funciones de validación de archivos (validate_pdf_content_type, validate_file_size, create_rfc9457_error)
+- [X] T040 [#333](https://github.com/JoaquinCaparros711/NotebookUm/issues/333) [US2] Crear app/services/validation.py con funciones de validación de archivos (validate_pdf_content_type, validate_file_size, create_rfc9457_error)
 - [ ] T041 [#334](https://github.com/JoaquinCaparros711/NotebookUm/issues/334) [US2] Crear app/services/pdf_service.py con integración Docling (función extract_text_from_pdf con manejo de errores para archivos corruptos)
 - [ ] T042 [#335](https://github.com/JoaquinCaparros711/NotebookUm/issues/335) [US2] Crear app/services/summary_service.py con integración OpenAI (initialize_openai_client, detect_language, summarize_text, hierarchical_summarize para textos largos con lógica de reintento)
 - [ ] T043 [#336](https://github.com/JoaquinCaparros711/NotebookUm/issues/336) [US2] Configurar Celery en app/services/async_tasks.py (configurar broker, crear process_document_task que llama a pdf_service y summary_service)
