@@ -117,7 +117,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [X] T043 [#336](https://github.com/JoaquinCaparros711/NotebookUm/issues/336) [US2] Configurar Celery en app/services/async_tasks.py (configurar broker, crear process_document_task que llama a pdf_service y summary_service)
 - [X] T044 [#337](https://github.com/JoaquinCaparros711/NotebookUm/issues/337) [US2] Crear blueprint de documentos en app/routes/documents.py con endpoint POST /api/v1/documento/upload (validar archivo, guardar metadata, encolar tarea asíncrona, retornar estado de procesamiento)
 - [X] T045 [#338](https://github.com/JoaquinCaparros711/NotebookUm/issues/338) [US2] Agregar endpoint GET /api/v1/documento/{document_id}/status para consultar estado de procesamiento
-- [ ] T046 [#339](https://github.com/JoaquinCaparros711/NotebookUm/issues/339) [US2] Registrar blueprint de documentos en app/__init__.py
+- [X] T046 [#339](https://github.com/JoaquinCaparros711/NotebookUm/issues/339) [US2] Registrar blueprint de documentos en app/__init__.py
 - [ ] T047 [#340](https://github.com/JoaquinCaparros711/NotebookUm/issues/340) [US2] Agregar manejo integral de errores para endpoint de carga (error no-PDF, error de límite de tamaño con RFC 9457, errores de procesamiento)
 - [ ] T048 [#341](https://github.com/JoaquinCaparros711/NotebookUm/issues/341) [US2] Actualizar modelo HistorialDocumento con campo estado (pending, processing, completed, failed)
 - [ ] T049 [#342](https://github.com/JoaquinCaparros711/NotebookUm/issues/342) [US2] Actualizar tarea asíncrona para actualizar campo estado durante el ciclo de vida del procesamiento
