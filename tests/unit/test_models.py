@@ -1,18 +1,38 @@
-"""Unit tests for User model"""
+"""Unit tests for database models."""
 
 import pytest
 from datetime import datetime, UTC
 from app import create_app
 from app.database import db
+from app.models.document import HistorialDocumento
 from app.models.user import User
+
+
+def _try_import_historial_pregunta_model():
+    try:
+        from app.models.question import HistorialPregunta
+    except ModuleNotFoundError as exc:
+        if exc.name == "app.models.question":
+            return None
+        raise
+    return HistorialPregunta
+
+
+def _require_historial_pregunta_model():
+    model = _try_import_historial_pregunta_model()
+    if model is None:
+        pytest.fail("HistorialPregunta no existe todavia. Implementar en app/models/question.py (T077).")
+    return model
 
 
 @pytest.fixture
 def app():
     """Create and configure a test application instance"""
     app = create_app("testing")
-    
+
     with app.app_context():
+        # Ensure optional models are imported (so db.create_all creates their tables when present).
+        _try_import_historial_pregunta_model()
         db.create_all()
         yield app
         db.session.remove()
@@ -115,3 +135,85 @@ class TestUserModel:
         # Then: Timestamps are ISO format strings
         assert isinstance(user_dict["created_at"], str)
         assert isinstance(user_dict["updated_at"], str)
+
+
+@pytest.mark.unit
+class TestHistorialPreguntaModel:
+    """Unit tests for HistorialPregunta model."""
+
+    def test_historial_pregunta_creation_and_relationships(self, session):
+        """HistorialPregunta must persist with required fields and relationships."""
+        HistorialPregunta = _require_historial_pregunta_model()
+
+        user = User(email="hist_pregunta_user@example.com", nombre="Hist Pregunta User")
+        session.add(user)
+        session.commit()
+
+        document = HistorialDocumento(
+            usuario_id=user.id,
+            nombre_archivo="hist_pregunta.pdf",
+            tamanio_bytes=1234,
+        )
+        session.add(document)
+        session.commit()
+
+        pregunta = HistorialPregunta(
+            usuario_id=user.id,
+            documento_id=document.id,
+            pregunta="Que dice el documento?",
+            respuesta=None,
+        )
+        session.add(pregunta)
+        session.commit()
+
+        assert pregunta.id is not None
+        assert pregunta.usuario_id == user.id
+        assert pregunta.documento_id == document.id
+        assert pregunta.pregunta == "Que dice el documento?"
+        assert pregunta.respuesta is None
+        assert pregunta.created_at is not None
+        assert isinstance(pregunta.created_at, datetime)
+
+        # Expected convenience aliases for API compatibility (like Summary model).
+        assert getattr(pregunta, "user_id") == user.id
+        assert getattr(pregunta, "document_id") == document.id
+
+        assert pregunta.usuario.id == user.id
+        assert pregunta.documento.id == document.id
+
+    def test_historial_pregunta_to_dict(self, session):
+        """to_dict should include both Spanish and API-friendly keys."""
+        HistorialPregunta = _require_historial_pregunta_model()
+
+        user = User(email="hist_pregunta_dict@example.com", nombre="Hist Pregunta Dict")
+        session.add(user)
+        session.commit()
+
+        document = HistorialDocumento(
+            usuario_id=user.id,
+            nombre_archivo="hist_pregunta_dict.pdf",
+            tamanio_bytes=5678,
+        )
+        session.add(document)
+        session.commit()
+
+        pregunta = HistorialPregunta(
+            usuario_id=user.id,
+            documento_id=document.id,
+            pregunta="Pregunta dict",
+            respuesta="Respuesta dict",
+        )
+        session.add(pregunta)
+        session.commit()
+
+        payload = pregunta.to_dict()
+
+        assert payload["id"] == pregunta.id
+        assert payload["usuario_id"] == user.id
+        assert payload["documento_id"] == document.id
+        assert payload["pregunta"] == "Pregunta dict"
+        assert payload["respuesta"] == "Respuesta dict"
+        assert isinstance(payload["created_at"], str)
+
+        assert payload["user_id"] == user.id
+        assert payload["document_id"] == document.id
