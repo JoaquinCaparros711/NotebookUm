@@ -202,7 +202,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T072 [#368](https://github.com/JoaquinCaparros711/NotebookUm/issues/368) [P] [US5] Escribir prueba de contrato para POST /api/v1/preguntas en tests/contract/test_questions_api.py (probar creación de pregunta, probar validación)
 - [x] T073 [#369](https://github.com/JoaquinCaparros711/NotebookUm/issues/369) [P] [US5] Escribir prueba de contrato para GET /api/v1/preguntas en tests/contract/test_questions_api.py (probar listar preguntas del usuario, probar filtrado por document_id)
 - [x] T074 [#370](https://github.com/JoaquinCaparros711/NotebookUm/issues/370) [P] [US5] Escribir prueba de contrato para PATCH /api/v1/pregunta/{id} en tests/contract/test_questions_api.py (probar actualización de pregunta/respuesta)
-- [ ] T075 [#371](https://github.com/JoaquinCaparros711/NotebookUm/issues/371) [P] [US5] Escribir prueba de contrato para DELETE /api/v1/pregunta/{id} en tests/contract/test_questions_api.py (probar eliminación de pregunta)
+- [x] T075 [#371](https://github.com/JoaquinCaparros711/NotebookUm/issues/371) [P] [US5] Escribir prueba de contrato para DELETE /api/v1/pregunta/{id} en tests/contract/test_questions_api.py (probar eliminación de pregunta)
 - [ ] T076 [#372](https://github.com/JoaquinCaparros711/NotebookUm/issues/372) [P] [US5] Escribir prueba unitaria para modelo HistorialPregunta en tests/unit/test_models.py
 
 ### Implementación para Historia de Usuario 5
