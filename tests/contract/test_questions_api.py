@@ -117,3 +117,109 @@ class TestPostQuestions:
         assert data["status"] == 400
         assert "pregunta" in data["detail"].lower()
         assert data["instance"] == QUESTIONS_ENDPOINT
+
+
+@pytest.mark.contract
+class TestGetQuestions:
+    """Contract tests for GET /api/v1/preguntas (listing and filtering)."""
+
+    def test_list_questions_for_user(self, client):
+        """Listing questions for a user returns only their questions."""
+        # Arrange: create two users and two documents
+        u1 = client.post("/api/v1/users", json={"email": "list_user1@example.com", "nombre": "List One"})
+        assert u1.status_code == 201
+        user1_id = u1.get_json()["id"]
+
+        u2 = client.post("/api/v1/users", json={"email": "list_user2@example.com", "nombre": "List Two"})
+        assert u2.status_code == 201
+        user2_id = u2.get_json()["id"]
+
+        # upload two documents
+        file_data1 = {
+            "file": (
+                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+                "list_doc1.pdf",
+                "application/pdf",
+            )
+        }
+        d1 = client.post("/api/v1/documento/upload", data=file_data1, content_type="multipart/form-data")
+        assert d1.status_code == 202
+        doc1_id = d1.get_json()["document_id"]
+
+        file_data2 = {
+            "file": (
+                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+                "list_doc2.pdf",
+                "application/pdf",
+            )
+        }
+        d2 = client.post("/api/v1/documento/upload", data=file_data2, content_type="multipart/form-data")
+        assert d2.status_code == 202
+        doc2_id = d2.get_json()["document_id"]
+
+        # Create questions: two for user1 (one per document), one for user2
+        q1 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user1_id, "document_id": doc1_id, "pregunta": "Pregunta A"})
+        assert q1.status_code == 201
+        q2 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user1_id, "document_id": doc2_id, "pregunta": "Pregunta B"})
+        assert q2.status_code == 201
+        q3 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user2_id, "document_id": doc1_id, "pregunta": "Otra pregunta"})
+        assert q3.status_code == 201
+
+        # Act: List questions as user1 using X-User-ID header (mock auth)
+        resp = client.get(QUESTIONS_ENDPOINT, headers={"X-User-ID": str(user1_id)})
+
+        # Assert
+        assert resp.status_code == 200
+        assert resp.content_type == "application/json"
+        data = resp.get_json()
+        assert isinstance(data, list)
+        # should contain only the two questions created by user1
+        assert any(q.get("pregunta") == "Pregunta A" for q in data)
+        assert any(q.get("pregunta") == "Pregunta B" for q in data)
+        assert all(q.get("user_id") == user1_id for q in data)
+
+    def test_filter_questions_by_document_id(self, client):
+        """Filtering questions by document_id returns only questions for that document."""
+        # Arrange: create a user and two documents
+        u = client.post("/api/v1/users", json={"email": "filter_user@example.com", "nombre": "Filter User"})
+        assert u.status_code == 201
+        user_id = u.get_json()["id"]
+
+        file_data1 = {
+            "file": (
+                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+                "filter_doc1.pdf",
+                "application/pdf",
+            )
+        }
+        d1 = client.post("/api/v1/documento/upload", data=file_data1, content_type="multipart/form-data")
+        assert d1.status_code == 202
+        doc1_id = d1.get_json()["document_id"]
+
+        file_data2 = {
+            "file": (
+                io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+                "filter_doc2.pdf",
+                "application/pdf",
+            )
+        }
+        d2 = client.post("/api/v1/documento/upload", data=file_data2, content_type="multipart/form-data")
+        assert d2.status_code == 202
+        doc2_id = d2.get_json()["document_id"]
+
+        # Create questions for both documents
+        q1 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user_id, "document_id": doc1_id, "pregunta": "Doc1 pregunta"})
+        assert q1.status_code == 201
+        q2 = client.post(QUESTIONS_ENDPOINT, json={"user_id": user_id, "document_id": doc2_id, "pregunta": "Doc2 pregunta"})
+        assert q2.status_code == 201
+
+        # Act: Filter by document_id for doc1
+        resp = client.get(f"{QUESTIONS_ENDPOINT}?document_id={doc1_id}", headers={"X-User-ID": str(user_id)})
+
+        # Assert: only the question for doc1 is returned
+        assert resp.status_code == 200
+        assert resp.content_type == "application/json"
+        data = resp.get_json()
+        assert isinstance(data, list)
+        assert len(data) >= 1
+        assert all(q.get("document_id") == doc1_id for q in data)
