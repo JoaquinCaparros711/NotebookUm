@@ -23,7 +23,7 @@ class HistorialDocumento(db.Model):
     usuario = db.relationship("User", backref=db.backref("documentos", lazy=True))
     resumenes = db.relationship(
         "Summary",
-        primaryjoin="HistorialDocumento.id == foreign(Summary.document_id)",
+        primaryjoin="HistorialDocumento.id == foreign(Summary.documento_id)",
         lazy=True,
     )
 
