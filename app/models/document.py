@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import foreign
 
 from app.database import db
+from app.models.summary import Summary
 
 
 class HistorialDocumento(db.Model):
@@ -22,8 +23,8 @@ class HistorialDocumento(db.Model):
 
     usuario = db.relationship("User", backref=db.backref("documentos", lazy=True))
     resumenes = db.relationship(
-        "Summary",
-        primaryjoin="HistorialDocumento.id == foreign(Summary.documento_id)",
+        Summary,
+        primaryjoin=lambda: HistorialDocumento.id == foreign(Summary.documento_id),
         lazy=True,
     )
 
