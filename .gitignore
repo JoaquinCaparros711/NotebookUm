@@ -43,3 +43,16 @@ logs/
 *.swp
 *.swo
 .DS_Store
+
+# ─── AI Agents & LLM Tools ────────────────────────────────────────────────────
+.claude/
+.specify/
+.cline/
+.roo/
+.gemini/
+.cursor/
+.aider/
+
+# ─── Docker Volumes & Data ────────────────────────────────────────────────────
+docker/*/data/
+docker/*/certs/
