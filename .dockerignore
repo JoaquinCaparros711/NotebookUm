@@ -45,6 +45,7 @@ tox.ini
 Dockerfile
 docker-compose.yml
 .dockerignore
+/docker
 
 # CI/CD
 .github/

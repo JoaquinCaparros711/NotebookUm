@@ -17,7 +17,7 @@ providers:
 
 
 log:
-  level: INFO
+  level: DEBUG
   format: common
 
 entryPoints:
@@ -26,7 +26,7 @@ entryPoints:
   postgresql:
     address: ":5432"
   mysql:
-    address: ":3307"
+    address: ":3306"
   http:
     address: ":80"
     http:

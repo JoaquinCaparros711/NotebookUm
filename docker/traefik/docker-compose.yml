@@ -1,6 +1,6 @@
 services:
     reverse-proxy:
-        image: traefik:v3.6
+        image: traefik:3.6
         container_name: traefik
         restart: unless-stopped
         security_opt:
@@ -9,8 +9,6 @@ services:
             - 80:80
             - 443:443
             - 6379:6379
-            - 5432:5432
-            - 3306:3306
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
             - ./config/traefik.yml:/etc/traefik/traefik.yml:ro
@@ -20,7 +18,6 @@ services:
             - notebookum-network
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.traefik=true"
 networks:
     notebookum-network:
         external: true

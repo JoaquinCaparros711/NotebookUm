@@ -17,9 +17,19 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv venv /opt/venv
 
-RUN uv pip install --no-cache-dir -e .
+RUN uv pip install --no-cache-dir .
+
+RUN uv pip install granian
 
 FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    FLASK_APP=main.py \
+    PORT=5000 \
+    VIRTUAL_ENV=/opt/venv
+
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 WORKDIR /app
 
@@ -45,7 +55,6 @@ CMD ["granian", \
      "--host", "0.0.0.0", \
      "--port", "5000", \
      "--workers", "4", \
-     "--max-concurrency", "1024", \
      "--loop", "auto", \
      "--http", "auto", \
      "main:app"]
