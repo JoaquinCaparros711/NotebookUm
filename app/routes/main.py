@@ -5,9 +5,15 @@ from ..database import db
 main_bp = Blueprint("main", __name__)
 
 
+import socket
+
 @main_bp.get("/")
 def index():
-    return jsonify({"message": "NotebookUm API is running 🚀"})
+    hostname = socket.gethostname()
+    return jsonify({
+        "message": "NotebookUm API is running 🚀",
+        "instance": hostname
+    })
 
 
 @main_bp.get("/health")
