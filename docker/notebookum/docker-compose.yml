@@ -1,5 +1,8 @@
 services: 
     notebookum:
+        build:
+            context: ../../
+            dockerfile: Dockerfile
         image: notebookum:1.0.2
         deploy: 
             replicas: 3
@@ -16,7 +19,7 @@ services:
             - ../../app:/app/app:ro
             - ../../main.py:/app/main.py:ro
         environment:
-          # Flask Configuration
+            # Flask Configuration
             - FLASK_ENV=${FLASK_ENV}
             - SECRET_KEY=${SECRET_KEY}
 

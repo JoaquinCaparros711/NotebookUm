@@ -21,6 +21,100 @@
 - **Dependencias**: Gestor ultra-rápido `uv`.
 - **Servidor ASGI**: Granian (para máximo rendimiento).
 
+## 🐳 Docker: Levantamiento Rápido
+
+El proyecto está completamente configurado con Docker. Contiene **4 servicios independientes**:
+
+```
+docker/
+├── traefik/      → Reverse Proxy + Load Balancer (Puerto 80/443)
+├── mysql/        → Base de Datos MySQL 8.0 (Puerto 3306)
+├── redis/        → Message Broker para Celery (Puerto 6379)
+└── notebookum/   → Aplicación Flask + Celery Workers (Puerto 5000)
+```
+
+### ⚡ Inicio Rápido (40 segundos)
+
+**Opción A: Manual**
+```bash
+# 1. Crear red Docker
+docker network create notebookum-network
+
+# 2. Iniciar servicios en orden
+cd docker/traefik && docker-compose up -d && sleep 3
+cd ../mysql && docker-compose up -d && sleep 15
+cd ../redis && docker-compose up -d && sleep 3
+cd ../notebookum && docker-compose up -d && sleep 5
+
+# 3. Verificar
+docker ps
+curl http://localhost:5000/health
+```
+
+**Opción B: Script Automático**
+```bash
+chmod +x docker/traefik/../setup_docker.sh
+./setup_docker.sh
+```
+
+### 📋 Verificaciones
+
+```bash
+# Ver todos los contenedores
+docker ps
+
+# Probar conexión a MySQL
+docker exec mysql mysql -uroot -pJoaco711$ -e "SELECT 1;"
+
+# Probar conexión a Redis
+docker exec redis redis-cli ping
+
+# Ver logs de la aplicación
+docker logs -f notebookum
+```
+
+### 🔐 Credenciales (Ya Configuradas)
+
+| Servicio | Usuario | Contraseña |
+|----------|---------|-----------|
+| MySQL | root | Joaco711$ |
+| Redis | - | Sin contraseña |
+| Flask | - | OPENAI_API_KEY en `.env` |
+
+⚠️ **Cambiar en producción**
+
+### 📊 Comandos Útiles
+
+```bash
+# Migraciones de base de datos
+docker exec notebookum flask db upgrade
+
+# Ejecutar tests
+docker exec notebookum python -m pytest tests/ -v
+
+# Acceder a MySQL
+docker exec -it mysql mysql -uroot -pJoaco711$ notebookum
+
+# Acceder a Redis CLI
+docker exec -it redis redis-cli
+
+# Detener todos los servicios
+docker-compose down  # En cada carpeta docker/*/
+
+# Ver estado en tiempo real
+docker stats
+```
+
+### 📚 Documentación Docker Completa
+
+Para guías detalladas, consulta `DOCKER_DEPLOYMENT.md`:
+- Paso a paso completo
+- Troubleshooting detallado
+- Configuración avanzada
+- Deployment a Kubernetes
+
+---
+
 ## 📜 Principios Arquitectónicos (`constitution.md`)
 
 Todo avance propuesto en el código o arquitectura debe ampararse en estos pilares formales:
