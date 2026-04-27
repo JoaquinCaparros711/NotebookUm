@@ -149,7 +149,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T055 [#349](https://github.com/JoaquinCaparros711/NotebookUm/issues/349) [US3] Crear blueprint de resúmenes en app/routes/summaries.py con endpoint GET /api/v1/summaries/document/{document_id} (validar propiedad, retornar resumen o error apropiado)
 - [x] T056 [#350](https://github.com/JoaquinCaparros711/NotebookUm/issues/350) [US3] Registrar blueprint de resúmenes en app/__init__.py
 - [x] T057 [#351](https://github.com/JoaquinCaparros711/NotebookUm/issues/351) [US3] Agregar verificación de autorización para confirmar que el usuario es dueño del documento antes de retornar el resumen
-- [ ] T058 [#352](https://github.com/JoaquinCaparros711/NotebookUm/issues/352) [US3] Agregar respuesta consciente del estado (retornar mensaje "en procesamiento" si estado no es "completed")
+- [x] T058 [#352](https://github.com/JoaquinCaparros711/NotebookUm/issues/352) [US3] Agregar respuesta consciente del estado (retornar mensaje "en procesamiento" si estado no es "completed")
 - [ ] T059 [#353](https://github.com/JoaquinCaparros711/NotebookUm/issues/353) [US3] Agregar manejo integral de errores (404 para no encontrado, 403 para no autorizado, mensajes claros para estado de procesamiento)
 - [ ] T060 [#354](https://github.com/JoaquinCaparros711/NotebookUm/issues/354) [US3] Ejecutar todas las pruebas de Historia de Usuario 3: `uv run pytest tests/contract/test_summaries_api.py tests/integration/test_summary_retrieval.py -v`
 
