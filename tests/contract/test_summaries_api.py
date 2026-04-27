@@ -244,3 +244,163 @@ class TestGetDocumentSummary:
         data = response.get_json()
         assert data["status"] == "completed"
         assert "message" not in data
+
+
+class TestSummaryErrorHandling:
+    """Contract tests verifying comprehensive RFC 9457 error handling.
+
+    Covers: 400 (bad header), 403 (unauthorized), 404 (not found),
+    500 (service failure) — all with correct content-type and shape.
+    """
+
+    @pytest.mark.contract
+    def test_404_has_rfc9457_shape_with_instance(self, client):
+        """Test 404 response includes type, title, status, detail, instance."""
+        # Act
+        response = client.get("/api/v1/summaries/document/99999")
+
+        # Assert: Full RFC 9457 shape present
+        assert response.status_code == 404
+        assert response.content_type == "application/problem+json"
+        data = response.get_json()
+        assert data["type"] == "about:blank"
+        assert data["title"] == "Not Found"
+        assert data["status"] == 404
+        assert "detail" in data and len(data["detail"]) > 0
+        assert data["instance"] == "/api/v1/summaries/document/99999"
+
+    @pytest.mark.contract
+    def test_400_for_invalid_user_id_header(self, client, app):
+        """Test non-integer X-User-ID returns 400 Bad Request (RFC 9457)."""
+        # Arrange: Valid summary exists
+        create_summary(
+            app,
+            id=10,
+            document_id=1000,
+            summary_text="Some text",
+            status="completed",
+            created_at=datetime(2026, 4, 7, 10, 0, 0),
+            updated_at=datetime(2026, 4, 7, 10, 0, 0),
+        )
+
+        # Act: Send non-integer user ID
+        response = client.get(
+            "/api/v1/summaries/document/1000",
+            headers={"X-User-ID": "not-a-number"},
+        )
+
+        # Assert: RFC 9457 400 with clear detail and correct instance
+        assert response.status_code == 400
+        assert response.content_type == "application/problem+json"
+        data = response.get_json()
+        assert data["title"] == "Bad Request"
+        assert data["status"] == 400
+        assert "integer" in data["detail"].lower()
+        assert data["instance"] == "/api/v1/summaries/document/1000"
+
+    @pytest.mark.contract
+    def test_403_has_rfc9457_shape_with_instance(self, client, app):
+        """Test 403 response contains 'instance' pointing to the endpoint."""
+        # Arrange: Document owned by user 1
+        with app.app_context():
+            from app.models.user import User
+            from app.models.document import HistorialDocumento
+
+            user = User(id=11, email="owner2@example.com", nombre="Owner2")
+            db.session.add(user)
+            db.session.flush()
+            doc = HistorialDocumento(
+                id=1100, usuario_id=user.id,
+                nombre_archivo="doc.pdf", tamanio_bytes=512, estado="completed",
+            )
+            db.session.add(doc)
+            db.session.flush()
+            summary = Summary(
+                id=11, document_id=1100,
+                summary_text="Private", status="completed",
+                user_id=user.id,
+                created_at=datetime(2026, 4, 7, 10, 0, 0),
+                updated_at=datetime(2026, 4, 7, 10, 0, 0),
+            )
+            db.session.add(summary)
+            db.session.commit()
+
+        # Act: Different user requests
+        response = client.get(
+            "/api/v1/summaries/document/1100",
+            headers={"X-User-ID": "99"},
+        )
+
+        # Assert: 403 with full RFC 9457 shape
+        assert response.status_code == 403
+        assert response.content_type == "application/problem+json"
+        data = response.get_json()
+        assert data["type"] == "about:blank"
+        assert data["title"] == "Forbidden"
+        assert data["status"] == 403
+        assert "detail" in data and len(data["detail"]) > 0
+        assert data["instance"] == "/api/v1/summaries/document/1100"
+
+    @pytest.mark.contract
+    def test_500_on_db_failure_returns_rfc9457(self, client, monkeypatch):
+        """Test that an unhandled DB exception returns 500 RFC 9457 (not HTML)."""
+        # Arrange: Simulate DB failure by patching SummaryService method
+        from app.services.summary_service import SummaryService
+
+        def raise_db_error(document_id):
+            raise RuntimeError("Simulated DB connection failure")
+
+        monkeypatch.setattr(
+            SummaryService,
+            "get_summary_by_document_id",
+            raise_db_error,
+        )
+
+        # Act
+        response = client.get("/api/v1/summaries/document/1")
+
+        # Assert: RFC 9457 500, not an HTML error page
+        assert response.status_code == 500
+        assert response.content_type == "application/problem+json"
+        data = response.get_json()
+        assert data["status"] == 500
+        assert "title" in data
+        assert "instance" in data
+        assert data["instance"] == "/api/v1/summaries/document/1"
+
+    @pytest.mark.contract
+    def test_500_on_ownership_check_failure_returns_rfc9457(self, client, app, monkeypatch):
+        """Test ownership check DB failure returns 500 RFC 9457 with instance."""
+        # Arrange: Valid summary but ownership check raises
+        create_summary(
+            app,
+            id=12,
+            document_id=1200,
+            summary_text="Some content",
+            status="completed",
+            created_at=datetime(2026, 4, 7, 10, 0, 0),
+            updated_at=datetime(2026, 4, 7, 10, 0, 0),
+        )
+        from app.services.summary_service import SummaryService
+
+        def raise_ownership_error(document_id, user_id):
+            raise RuntimeError("Simulated ownership check failure")
+
+        monkeypatch.setattr(
+            SummaryService,
+            "check_document_ownership",
+            raise_ownership_error,
+        )
+
+        # Act: Request with X-User-ID to trigger ownership check
+        response = client.get(
+            "/api/v1/summaries/document/1200",
+            headers={"X-User-ID": "1"},
+        )
+
+        # Assert: RFC 9457 500 with endpoint-specific instance
+        assert response.status_code == 500
+        assert response.content_type == "application/problem+json"
+        data = response.get_json()
+        assert data["status"] == 500
+        assert data["instance"] == "/api/v1/summaries/document/1200"

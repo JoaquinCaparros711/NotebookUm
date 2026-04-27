@@ -1,9 +1,13 @@
 """Blueprint for summary retrieval endpoints."""
 
+import logging
+
 from flask import Blueprint, Response, jsonify, request
 
 from app.services.summary_service import SummaryService
-from app.utils.errors import bad_request, forbidden, not_found
+from app.utils.errors import bad_request, forbidden, internal_server_error, not_found
+
+logger = logging.getLogger(__name__)
 
 summaries_bp = Blueprint("summaries", __name__, url_prefix="/api/v1/summaries")
 
@@ -22,6 +26,10 @@ def get_document_summary(document_id: int) -> Response:
     a ``"message"`` key is included in the JSON body explaining the current
     processing state (spec HU-3, escenario 3).
 
+    All errors — including unexpected service failures — are returned as
+    ``application/problem+json`` following RFC 9457 with the endpoint URI
+    in the ``"instance"`` field.
+
     Args:
         document_id: Primary key of the document whose summary is requested.
 
@@ -34,17 +42,34 @@ def get_document_summary(document_id: int) -> Response:
               (``application/problem+json``, RFC 9457).
         404 – No summary exists for the given document
               (``application/problem+json``, RFC 9457).
+        500 – Unexpected service or database failure
+              (``application/problem+json``, RFC 9457).
     """
     instance = f"{_INSTANCE_PREFIX}/{document_id}"
     service = SummaryService()
 
-    summary = service.get_summary_by_document_id(document_id)
+    # ── 1. Retrieve summary record ─────────────────────────────────────────
+    try:
+        summary = service.get_summary_by_document_id(document_id)
+    except Exception:
+        logger.exception(
+            "Unhandled error retrieving summary for document %s", document_id
+        )
+        return internal_server_error(
+            detail=(
+                "An unexpected error occurred while retrieving the summary. "
+                "Please try again later."
+            ),
+            instance=instance,
+        )
+
     if not summary:
         return not_found(
             detail=f"Summary for document {document_id} not found",
             instance=instance,
         )
 
+    # ── 2. Optional authorization ──────────────────────────────────────────
     raw_user_id = request.headers.get("X-User-ID")
     if raw_user_id is not None:
         try:
@@ -55,12 +80,34 @@ def get_document_summary(document_id: int) -> Response:
                 instance=instance,
             )
 
-        if not service.check_document_ownership(document_id=document_id, user_id=user_id):
-            return forbidden(
-                detail="Access denied: You are not authorized to view this document summary",
+        try:
+            authorized = service.check_document_ownership(
+                document_id=document_id, user_id=user_id
+            )
+        except Exception:
+            logger.exception(
+                "Unhandled error during ownership check for document %s / user %s",
+                document_id,
+                user_id,
+            )
+            return internal_server_error(
+                detail=(
+                    "An unexpected error occurred while verifying access permissions. "
+                    "Please try again later."
+                ),
                 instance=instance,
             )
 
+        if not authorized:
+            return forbidden(
+                detail=(
+                    "Access denied: You are not authorized to view "
+                    "this document summary"
+                ),
+                instance=instance,
+            )
+
+    # ── 3. Build state-aware payload ───────────────────────────────────────
     payload = summary.to_dict()
 
     message = service.get_status_message(summary)
