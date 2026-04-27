@@ -89,17 +89,39 @@ class TestGetDocumentSummary:
     @pytest.mark.contract
     def test_forbidden_for_unauthorized_access(self, client, app):
         """Test GET request from user without access returns 403 Forbidden"""
-        # Arrange: Create a summary owned by user 1
-        create_summary(
-            app,
-            id=2,
-            document_id=200,
-            summary_text="Private document summary.",
-            status="completed",
-            user_id=1,  # Owned by user 1
-            created_at=datetime(2026, 4, 7, 12, 0, 0),
-            updated_at=datetime(2026, 4, 7, 12, 30, 0),
-        )
+        # Arrange: Create user 1, their document, and the linked summary
+        with app.app_context():
+            from app.models.user import User
+            from app.models.document import HistorialDocumento
+
+            user = User(id=1, email="owner@example.com", nombre="Owner")
+            db.session.add(user)
+            db.session.flush()
+
+            doc = HistorialDocumento(
+                id=200,
+                usuario_id=user.id,
+                nombre_archivo="private.pdf",
+                tamanio_bytes=1024,
+                estado="completed",
+            )
+            db.session.add(doc)
+            db.session.flush()
+
+            from app.models.summary import Summary
+            from datetime import datetime
+
+            summary = Summary(
+                id=2,
+                document_id=200,
+                summary_text="Private document summary.",
+                status="completed",
+                user_id=user.id,
+                created_at=datetime(2026, 4, 7, 12, 0, 0),
+                updated_at=datetime(2026, 4, 7, 12, 30, 0),
+            )
+            db.session.add(summary)
+            db.session.commit()
 
         # Act: Request summary as different user (user 2) via mocked auth
         response = client.get(

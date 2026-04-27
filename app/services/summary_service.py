@@ -7,6 +7,8 @@ import time
 
 from openai import OpenAI
 
+from app.database import db
+from app.models.document import HistorialDocumento
 from app.models.summary import Summary
 
 
@@ -52,6 +54,28 @@ class SummaryService:
         if summary.user_id is None:
             return True
         return summary.user_id == user_id
+
+    def check_document_ownership(self, document_id: int, user_id: int) -> bool:
+        """
+        Verify that *user_id* is the owner of the parent document (RF-018).
+
+        Looks up ``HistorialDocumento`` by primary key and compares its
+        ``usuario_id`` with the requesting ``user_id``.  When the document
+        record does not exist the method grants access (no restriction can
+        be enforced against a missing resource).
+
+        Args:
+            document_id: Primary key of the document to verify ownership for.
+            user_id: ID of the user requesting access.
+
+        Returns:
+            True  – user owns the document, or the document was not found.
+            False – another user owns the document.
+        """
+        document = db.session.get(HistorialDocumento, document_id)
+        if document is None:
+            return True
+        return document.usuario_id == user_id
 
     @staticmethod
     def detect_language(text: str) -> str:

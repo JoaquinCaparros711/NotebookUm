@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from app.services.user_service import UserService, ValidationError
 from app.models.user import User
+from app.models.document import HistorialDocumento
 from app.models.summary import Summary
 from app.services.summary_service import SummaryService
 
@@ -437,3 +438,83 @@ class TestSummaryServiceGetByDocumentId:
 
         # Then: DB access is routed through Summary.query.filter_by (ORM layer)
         mock_summary_class.query.filter_by.assert_called_once()
+
+
+class TestSummaryServiceDocumentOwnership:
+    """Tests for SummaryService.check_document_ownership with mocked DB.
+
+    Verifies that ownership is resolved from HistorialDocumento.usuario_id,
+    not from Summary.user_id, fulfilling RF-018 (spec.md).
+    """
+
+    @patch("app.services.summary_service.db")
+    def test_returns_true_when_user_owns_document(self, mock_db):
+        """Test returns True when the requesting user owns the parent document."""
+        # Given: Document owned by user 7
+        mock_doc = Mock(spec=HistorialDocumento)
+        mock_doc.usuario_id = 7
+        mock_db.session.get.return_value = mock_doc
+        service = SummaryService()
+
+        # When: User 7 checks access for document 1
+        result = service.check_document_ownership(document_id=1, user_id=7)
+
+        # Then: Access granted
+        assert result is True
+
+    @patch("app.services.summary_service.db")
+    def test_returns_false_when_user_does_not_own_document(self, mock_db):
+        """Test returns False when the requesting user is not the document owner."""
+        # Given: Document owned by user 1
+        mock_doc = Mock(spec=HistorialDocumento)
+        mock_doc.usuario_id = 1
+        mock_db.session.get.return_value = mock_doc
+        service = SummaryService()
+
+        # When: User 99 (different user) checks access
+        result = service.check_document_ownership(document_id=1, user_id=99)
+
+        # Then: Access denied
+        assert result is False
+
+    @patch("app.services.summary_service.db")
+    def test_returns_true_when_document_not_found(self, mock_db):
+        """Test returns True when the document record doesn't exist (no restriction)."""
+        # Given: Document not in DB
+        mock_db.session.get.return_value = None
+        service = SummaryService()
+
+        # When: Any user checks access for a missing document
+        result = service.check_document_ownership(document_id=999, user_id=5)
+
+        # Then: No document → no restriction → allow access
+        assert result is True
+
+    @patch("app.services.summary_service.db")
+    def test_queries_with_correct_document_id(self, mock_db):
+        """Test that the exact document_id is passed to the DB query."""
+        # Given: Any mock document
+        mock_db.session.get.return_value = None
+        service = SummaryService()
+        target_doc_id = 42
+
+        # When: Checking ownership for document 42
+        service.check_document_ownership(document_id=target_doc_id, user_id=1)
+
+        # Then: DB queried with the exact ID via modern session.get API
+        mock_db.session.get.assert_called_once_with(HistorialDocumento, target_doc_id)
+
+    @patch("app.services.summary_service.db")
+    def test_delegates_db_access_to_orm(self, mock_db):
+        """Test that DB access goes through db.session.get (SQLAlchemy 2.x ORM layer)."""
+        # Given: Mock document
+        mock_doc = Mock(spec=HistorialDocumento)
+        mock_doc.usuario_id = 3
+        mock_db.session.get.return_value = mock_doc
+        service = SummaryService()
+
+        # When: Calling check_document_ownership
+        service.check_document_ownership(document_id=10, user_id=3)
+
+        # Then: Access goes through db.session.get, not legacy Query.get
+        mock_db.session.get.assert_called_once()

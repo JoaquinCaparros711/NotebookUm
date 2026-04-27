@@ -14,7 +14,10 @@ _INSTANCE_PREFIX = "/api/v1/summaries/document"
 def get_document_summary(document_id: int) -> Response:
     """Retrieve the summary for a specific document.
 
-    Checks ownership when the optional ``X-User-ID`` request header is present.
+    Authorization is applied when the optional ``X-User-ID`` request header
+    is present.  Ownership is resolved against the parent document record
+    (``HistorialDocumento.usuario_id``) as required by RF-018, *not* merely
+    against ``Summary.user_id``.
 
     Args:
         document_id: Primary key of the document whose summary is requested.
@@ -23,7 +26,7 @@ def get_document_summary(document_id: int) -> Response:
         200 – Summary payload as ``application/json``.
         400 – ``X-User-ID`` header is present but not a valid integer
               (``application/problem+json``, RFC 9457).
-        403 – Authenticated user does not own the requested summary
+        403 – Authenticated user does not own the parent document
               (``application/problem+json``, RFC 9457).
         404 – No summary exists for the given document
               (``application/problem+json``, RFC 9457).
@@ -48,7 +51,7 @@ def get_document_summary(document_id: int) -> Response:
                 instance=instance,
             )
 
-        if not service.check_user_ownership(summary, user_id):
+        if not service.check_document_ownership(document_id=document_id, user_id=user_id):
             return forbidden(
                 detail="Access denied: You are not authorized to view this document summary",
                 instance=instance,
