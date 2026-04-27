@@ -144,7 +144,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 
 ### Implementación para Historia de Usuario 3
 
-- [ ] T053 [#347](https://github.com/JoaquinCaparros711/NotebookUm/issues/347) [US3] Crear SummaryService en app/services/summary_service.py (métodos get_summary_by_document_id, check_user_ownership)
+- [x] T053 [#347](https://github.com/JoaquinCaparros711/NotebookUm/issues/347) [US3] Crear SummaryService en app/services/summary_service.py (métodos get_summary_by_document_id, check_user_ownership)
 - [ ] T054 [#348](https://github.com/JoaquinCaparros711/NotebookUm/issues/348) [US3] Escribir pruebas unitarias para SummaryService en tests/unit/test_services.py (probar validación de propiedad, probar recuperación con db mockeada)
 - [ ] T055 [#349](https://github.com/JoaquinCaparros711/NotebookUm/issues/349) [US3] Crear blueprint de resúmenes en app/routes/summaries.py con endpoint GET /api/v1/summaries/document/{document_id} (validar propiedad, retornar resumen o error apropiado)
 - [ ] T056 [#350](https://github.com/JoaquinCaparros711/NotebookUm/issues/350) [US3] Registrar blueprint de resúmenes en app/__init__.py
