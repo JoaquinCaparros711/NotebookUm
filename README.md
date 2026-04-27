@@ -64,7 +64,7 @@ chmod +x docker/traefik/../setup_docker.sh
 docker ps
 
 # Probar conexión a MySQL
-docker exec mysql mysql -uroot -pJoaco711$ -e "SELECT 1;"
+docker exec mysql mysql -uroot -pTuClave -e "SELECT 1;"
 
 # Probar conexión a Redis
 docker exec redis redis-cli ping
