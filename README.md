@@ -93,7 +93,7 @@ docker exec notebookum flask db upgrade
 docker exec notebookum python -m pytest tests/ -v
 
 # Acceder a MySQL
-docker exec -it mysql mysql -uroot -pJoaco711$ notebookum
+docker exec -it mysql mysql -uroot -pTuClave notebookum
 
 # Acceder a Redis CLI
 docker exec -it redis redis-cli
