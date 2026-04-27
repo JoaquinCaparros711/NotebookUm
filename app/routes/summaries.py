@@ -16,14 +16,18 @@ def get_document_summary(document_id: int) -> Response:
 
     Authorization is applied when the optional ``X-User-ID`` request header
     is present.  Ownership is resolved against the parent document record
-    (``HistorialDocumento.usuario_id``) as required by RF-018, *not* merely
-    against ``Summary.user_id``.
+    (``HistorialDocumento.usuario_id``) as required by RF-018.
+
+    The response is state-aware: when the summary status is not ``"completed"``
+    a ``"message"`` key is included in the JSON body explaining the current
+    processing state (spec HU-3, escenario 3).
 
     Args:
         document_id: Primary key of the document whose summary is requested.
 
     Returns:
         200 – Summary payload as ``application/json``.
+              Includes ``"message"`` for non-completed states.
         400 – ``X-User-ID`` header is present but not a valid integer
               (``application/problem+json``, RFC 9457).
         403 – Authenticated user does not own the parent document
@@ -57,4 +61,10 @@ def get_document_summary(document_id: int) -> Response:
                 instance=instance,
             )
 
-    return jsonify(summary.to_dict()), 200
+    payload = summary.to_dict()
+
+    message = service.get_status_message(summary)
+    if message is not None:
+        payload["message"] = message
+
+    return jsonify(payload), 200

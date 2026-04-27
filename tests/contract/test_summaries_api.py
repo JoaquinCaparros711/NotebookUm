@@ -143,14 +143,14 @@ class TestGetDocumentSummary:
 
     @pytest.mark.contract
     def test_pending_status_for_processing_document(self, client, app):
-        """Test GET request for document still processing returns 200 with status=pending"""
+        """Test GET for pending document returns 200 with 'message' field."""
         # Arrange: Create a summary with pending status
         create_summary(
             app,
             id=3,
             document_id=300,
-            summary_text="",  # Empty while processing
-            status="pending",  # Still being processed
+            summary_text="",
+            status="pending",
             created_at=datetime(2026, 4, 7, 14, 0, 0),
             updated_at=datetime(2026, 4, 7, 14, 0, 0),
         )
@@ -158,13 +158,89 @@ class TestGetDocumentSummary:
         # Act: Request the pending summary
         response = client.get("/api/v1/summaries/document/300")
 
-        # Assert: Response is 200 with status='pending'
+        # Assert: 200 with status-aware message
         assert response.status_code == 200
         assert response.content_type == "application/json"
 
         data = response.get_json()
         assert data["document_id"] == 300
         assert data["status"] == "pending"
-        assert data["summary_text"] == ""  # Empty while processing
+        assert data["summary_text"] == ""
         assert "created_at" in data
         assert "updated_at" in data
+        # State-aware: message must be present and non-empty for non-completed
+        assert "message" in data
+        assert isinstance(data["message"], str)
+        assert len(data["message"]) > 0
+
+    @pytest.mark.contract
+    def test_processing_status_includes_message(self, client, app):
+        """Test GET for 'processing' document returns 200 with a message field."""
+        # Arrange: Create a summary actively being processed
+        create_summary(
+            app,
+            id=4,
+            document_id=400,
+            summary_text="",
+            status="processing",
+            created_at=datetime(2026, 4, 7, 15, 0, 0),
+            updated_at=datetime(2026, 4, 7, 15, 0, 0),
+        )
+
+        # Act
+        response = client.get("/api/v1/summaries/document/400")
+
+        # Assert: 200 with a non-empty message
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "processing"
+        assert "message" in data
+        assert len(data["message"]) > 0
+
+    @pytest.mark.contract
+    def test_failed_status_includes_distinct_message(self, client, app):
+        """Test GET for a failed summary returns 200 with a failure-specific message."""
+        # Arrange: Create a failed summary
+        create_summary(
+            app,
+            id=5,
+            document_id=500,
+            summary_text="",
+            status="failed",
+            created_at=datetime(2026, 4, 7, 16, 0, 0),
+            updated_at=datetime(2026, 4, 7, 16, 0, 0),
+        )
+
+        # Act
+        response = client.get("/api/v1/summaries/document/500")
+
+        # Assert: 200 with failure message (not the same as pending message)
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "failed"
+        assert "message" in data
+        assert len(data["message"]) > 0
+
+    @pytest.mark.contract
+    def test_completed_status_has_no_message(self, client, app):
+        """Test completed summaries do NOT include a 'message' field in the response."""
+        # Arrange: Create a completed summary (already covered by test_successful_retrieval,
+        # but this makes the absence of 'message' explicit)
+        create_summary(
+            app,
+            id=6,
+            document_id=600,
+            summary_text="Full summary text here.",
+            status="completed",
+            created_at=datetime(2026, 4, 7, 17, 0, 0),
+            updated_at=datetime(2026, 4, 7, 17, 0, 0),
+        )
+
+        # Act
+        response = client.get("/api/v1/summaries/document/600")
+
+        # Assert: 200 WITHOUT a 'message' field
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "completed"
+        assert "message" not in data

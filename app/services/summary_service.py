@@ -78,7 +78,45 @@ class SummaryService:
         return document.usuario_id == user_id
 
     @staticmethod
+    def get_status_message(summary: Summary) -> str | None:
+        """Return a human-readable state message for non-completed summaries.
+
+        Completed summaries need no overlay message, so this method returns
+        ``None`` in that case.  All other states produce a Spanish message
+        intended to be included in the API response payload under the key
+        ``"message"``, satisfying HU-3 escenario 3 (spec.md).
+
+        Args:
+            summary: The Summary instance whose state is being evaluated.
+
+        Returns:
+            ``None`` when ``summary.status == "completed"``.
+            A non-empty string for every other known (or unknown) status.
+        """
+        _MESSAGES: dict[str, str] = {
+            "pending": (
+                "El resumen está en cola de procesamiento. "
+                "Por favor, intente de nuevo en unos momentos."
+            ),
+            "processing": (
+                "El resumen está siendo generado. "
+                "Por favor, intente de nuevo en unos momentos."
+            ),
+            "failed": (
+                "La generación del resumen falló. "
+                "Por favor, vuelva a cargar el documento para reintentar."
+            ),
+        }
+        if summary.status == "completed":
+            return None
+        return _MESSAGES.get(
+            summary.status,
+            f"El resumen no está disponible (estado: {summary.status}).",
+        )
+
+    @staticmethod
     def detect_language(text: str) -> str:
+
         """Detect basic language for Spanish/English support."""
         lowered = text.lower()
         spanish_markers = (" el ", " la ", " de ", " y ", " que ", " los ", " las ", " un ")

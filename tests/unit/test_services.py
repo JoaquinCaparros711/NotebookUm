@@ -518,3 +518,97 @@ class TestSummaryServiceDocumentOwnership:
 
         # Then: Access goes through db.session.get, not legacy Query.get
         mock_db.session.get.assert_called_once()
+
+
+class TestSummaryServiceStatusMessage:
+    """Tests for SummaryService.get_status_message (pure logic, no DB).
+
+    Verifies that state-aware messages are returned correctly for each
+    possible Summary.status value, fulfilling spec escenario 3 of HU-3.
+    """
+
+    def test_completed_status_returns_none(self):
+        """Test completed summaries have no processing message."""
+        # Given: A completed summary
+        summary = Mock(spec=Summary)
+        summary.status = "completed"
+        service = SummaryService()
+
+        # When: Getting the status message
+        result = service.get_status_message(summary)
+
+        # Then: No message for completed summaries
+        assert result is None
+
+    def test_pending_status_returns_processing_message(self):
+        """Test pending status returns a 'processing' message in Spanish."""
+        # Given: A pending summary
+        summary = Mock(spec=Summary)
+        summary.status = "pending"
+        service = SummaryService()
+
+        # When: Getting the status message
+        result = service.get_status_message(summary)
+
+        # Then: Returns a descriptive processing message
+        assert result is not None
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+    def test_processing_status_returns_processing_message(self):
+        """Test 'processing' status returns a message indicating work in progress."""
+        # Given: A summary being actively processed
+        summary = Mock(spec=Summary)
+        summary.status = "processing"
+        service = SummaryService()
+
+        # When: Getting the status message
+        result = service.get_status_message(summary)
+
+        # Then: Returns a non-empty message
+        assert result is not None
+        assert isinstance(result, str)
+
+    def test_failed_status_returns_failure_message(self):
+        """Test failed status returns an error message distinct from pending."""
+        # Given: A failed summary
+        summary = Mock(spec=Summary)
+        summary.status = "failed"
+        service = SummaryService()
+
+        # When: Getting the status message
+        result = service.get_status_message(summary)
+
+        # Then: Returns a non-empty failure message
+        assert result is not None
+        assert isinstance(result, str)
+
+    def test_pending_and_failed_messages_are_different(self):
+        """Test that 'pending' and 'failed' statuses produce distinct messages."""
+        # Given: Summaries with different non-completed statuses
+        pending_summary = Mock(spec=Summary)
+        pending_summary.status = "pending"
+        failed_summary = Mock(spec=Summary)
+        failed_summary.status = "failed"
+        service = SummaryService()
+
+        # When: Getting messages for each
+        pending_msg = service.get_status_message(pending_summary)
+        failed_msg = service.get_status_message(failed_summary)
+
+        # Then: Messages are different (failed is not the same as pending)
+        assert pending_msg != failed_msg
+
+    def test_unknown_status_returns_fallback_message(self):
+        """Test that any unexpected status value returns a safe fallback message."""
+        # Given: A summary with an unrecognised status
+        summary = Mock(spec=Summary)
+        summary.status = "unknown_future_state"
+        service = SummaryService()
+
+        # When: Getting the status message
+        result = service.get_status_message(summary)
+
+        # Then: Returns a non-empty fallback (never None, never raises)
+        assert result is not None
+        assert isinstance(result, str)
