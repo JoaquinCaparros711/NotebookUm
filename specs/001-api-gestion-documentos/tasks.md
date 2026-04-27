@@ -146,7 +146,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 
 - [x] T053 [#347](https://github.com/JoaquinCaparros711/NotebookUm/issues/347) [US3] Crear SummaryService en app/services/summary_service.py (métodos get_summary_by_document_id, check_user_ownership)
 - [ ] T054 [#348](https://github.com/JoaquinCaparros711/NotebookUm/issues/348) [US3] Escribir pruebas unitarias para SummaryService en tests/unit/test_services.py (probar validación de propiedad, probar recuperación con db mockeada)
-- [ ] T055 [#349](https://github.com/JoaquinCaparros711/NotebookUm/issues/349) [US3] Crear blueprint de resúmenes en app/routes/summaries.py con endpoint GET /api/v1/summaries/document/{document_id} (validar propiedad, retornar resumen o error apropiado)
+- [x] T055 [#349](https://github.com/JoaquinCaparros711/NotebookUm/issues/349) [US3] Crear blueprint de resúmenes en app/routes/summaries.py con endpoint GET /api/v1/summaries/document/{document_id} (validar propiedad, retornar resumen o error apropiado)
 - [ ] T056 [#350](https://github.com/JoaquinCaparros711/NotebookUm/issues/350) [US3] Registrar blueprint de resúmenes en app/__init__.py
 - [ ] T057 [#351](https://github.com/JoaquinCaparros711/NotebookUm/issues/351) [US3] Agregar verificación de autorización para confirmar que el usuario es dueño del documento antes de retornar el resumen
 - [ ] T058 [#352](https://github.com/JoaquinCaparros711/NotebookUm/issues/352) [US3] Agregar respuesta consciente del estado (retornar mensaje "en procesamiento" si estado no es "completed")
