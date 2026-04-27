@@ -2,7 +2,6 @@
 
 import pytest
 from datetime import datetime
-from flask import Flask
 from app import create_app
 from app.database import db
 from app.models.summary import Summary
@@ -12,11 +11,11 @@ from app.models.summary import Summary
 def app():
     """Create and configure a test Flask application"""
     app = create_app("testing")
-    
+
     with app.app_context():
         # Import models to ensure they're registered with SQLAlchemy
         from app.models.summary import Summary  # noqa: F401
-        
+
         db.create_all()
         yield app
         db.session.remove()
@@ -52,16 +51,16 @@ class TestGetDocumentSummary:
             summary_text="This is a test summary of the document content.",
             status="completed",
             created_at=datetime(2026, 4, 7, 10, 0, 0),
-            updated_at=datetime(2026, 4, 7, 10, 30, 0)
+            updated_at=datetime(2026, 4, 7, 10, 30, 0),
         )
-        
+
         # Act: Request the summary via GET endpoint
-        response = client.get(f"/api/v1/summaries/document/100")
-        
+        response = client.get("/api/v1/summaries/document/100")
+
         # Assert: Response is 200 with complete summary data
         assert response.status_code == 200
         assert response.content_type == "application/json"
-        
+
         data = response.get_json()
         assert data["id"] == summary_id
         assert data["document_id"] == 100
@@ -75,11 +74,11 @@ class TestGetDocumentSummary:
         """Test GET request with non-existent document_id returns 404 Not Found"""
         # Act: Request summary for document that doesn't exist
         response = client.get("/api/v1/summaries/document/99999")
-        
+
         # Assert: Response is 404 with RFC 9457 error format
         assert response.status_code == 404
         assert response.content_type == "application/problem+json"
-        
+
         data = response.get_json()
         assert data["type"] == "about:blank"
         assert data["title"] == "Not Found"
@@ -99,24 +98,26 @@ class TestGetDocumentSummary:
             status="completed",
             user_id=1,  # Owned by user 1
             created_at=datetime(2026, 4, 7, 12, 0, 0),
-            updated_at=datetime(2026, 4, 7, 12, 30, 0)
+            updated_at=datetime(2026, 4, 7, 12, 30, 0),
         )
-        
+
         # Act: Request summary as different user (user 2) via mocked auth
         response = client.get(
             "/api/v1/summaries/document/200",
-            headers={"X-User-ID": "2"}  # Mock authentication as user 2
+            headers={"X-User-ID": "2"},  # Mock authentication as user 2
         )
-        
+
         # Assert: Response is 403 Forbidden
         assert response.status_code == 403
         assert response.content_type == "application/problem+json"
-        
+
         data = response.get_json()
         assert data["type"] == "about:blank"
         assert data["title"] == "Forbidden"
         assert data["status"] == 403
-        assert "access denied" in data["detail"].lower() or "not authorized" in data["detail"].lower()
+        assert (
+            "access denied" in data["detail"].lower() or "not authorized" in data["detail"].lower()
+        )
 
     @pytest.mark.contract
     def test_pending_status_for_processing_document(self, client, app):
@@ -129,16 +130,16 @@ class TestGetDocumentSummary:
             summary_text="",  # Empty while processing
             status="pending",  # Still being processed
             created_at=datetime(2026, 4, 7, 14, 0, 0),
-            updated_at=datetime(2026, 4, 7, 14, 0, 0)
+            updated_at=datetime(2026, 4, 7, 14, 0, 0),
         )
-        
+
         # Act: Request the pending summary
         response = client.get("/api/v1/summaries/document/300")
-        
+
         # Assert: Response is 200 with status='pending'
         assert response.status_code == 200
         assert response.content_type == "application/json"
-        
+
         data = response.get_json()
         assert data["document_id"] == 300
         assert data["status"] == "pending"
