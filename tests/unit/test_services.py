@@ -1,9 +1,11 @@
-"""Unit tests for UserService"""
+"""Unit tests for UserService and SummaryService"""
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from app.services.user_service import UserService, ValidationError
 from app.models.user import User
+from app.models.summary import Summary
+from app.services.summary_service import SummaryService
 
 
 class TestUserServiceValidation:
@@ -278,3 +280,160 @@ class TestUserServiceGetUserById:
 
         # Then: Uses modern Session.get method
         mock_session.get.assert_called_once_with(User, user_id)
+
+
+# ---------------------------------------------------------------------------
+# SummaryService – Tests
+# ---------------------------------------------------------------------------
+
+
+class TestSummaryServiceOwnership:
+    """Tests for SummaryService.check_user_ownership (pure logic, no DB needed)."""
+
+    def test_ownership_returns_true_when_user_id_matches(self):
+        """Test check_user_ownership returns True when user owns the summary."""
+        # Given: A summary owned by user 42
+        summary = Mock(spec=Summary)
+        summary.user_id = 42
+        service = SummaryService()
+
+        # When: Checking ownership for the same user
+        result = service.check_user_ownership(summary, 42)
+
+        # Then: Returns True
+        assert result is True
+
+    def test_ownership_returns_false_when_user_id_differs(self):
+        """Test check_user_ownership returns False when another user checks."""
+        # Given: A summary owned by user 1
+        summary = Mock(spec=Summary)
+        summary.user_id = 1
+        service = SummaryService()
+
+        # When: Checking ownership for a different user
+        result = service.check_user_ownership(summary, 99)
+
+        # Then: Returns False
+        assert result is False
+
+    def test_ownership_returns_true_when_no_user_restriction(self):
+        """Test check_user_ownership returns True when summary.user_id is None."""
+        # Given: A public summary (no user restriction)
+        summary = Mock(spec=Summary)
+        summary.user_id = None
+        service = SummaryService()
+
+        # When: Any user checks ownership
+        result = service.check_user_ownership(summary, 7)
+
+        # Then: Returns True (no restriction enforced)
+        assert result is True
+
+    def test_ownership_returns_false_for_zero_vs_nonzero_id(self):
+        """Test check_user_ownership correctly handles user_id=0 edge case."""
+        # Given: Summary owned by user_id=0 (edge case)
+        summary = Mock(spec=Summary)
+        summary.user_id = 0
+        service = SummaryService()
+
+        # When: User 0 checks (matches) and user 1 checks (does not match)
+        result_match = service.check_user_ownership(summary, 0)
+        result_no_match = service.check_user_ownership(summary, 1)
+
+        # Then: Only the exact match returns True
+        assert result_match is True
+        assert result_no_match is False
+
+    def test_ownership_is_strict_equality_not_truthiness(self):
+        """Test that user_id comparison uses strict equality (not just truthy)."""
+        # Given: Summary owned by user_id=5
+        summary = Mock(spec=Summary)
+        summary.user_id = 5
+        service = SummaryService()
+
+        # When: Checking with user_id=1 (truthy but not equal)
+        result = service.check_user_ownership(summary, 1)
+
+        # Then: Returns False despite both being truthy
+        assert result is False
+
+
+class TestSummaryServiceGetByDocumentId:
+    """Tests for SummaryService.get_summary_by_document_id with mocked DB."""
+
+    @patch("app.services.summary_service.Summary")
+    def test_returns_summary_when_document_exists(self, mock_summary_class):
+        """Test returns Summary object when document_id is found in DB."""
+        # Given: DB returns a summary for document 1
+        mock_summary = Mock(spec=Summary)
+        mock_summary.document_id = 1
+        mock_summary.summary_text = "Relevant content."
+        mock_summary_class.query.filter_by.return_value.first.return_value = mock_summary
+        service = SummaryService()
+
+        # When: Retrieving summary for document 1
+        result = service.get_summary_by_document_id(1)
+
+        # Then: Returns the mock summary
+        assert result is mock_summary
+        assert result.document_id == 1
+        mock_summary_class.query.filter_by.assert_called_once_with(document_id=1)
+        mock_summary_class.query.filter_by.return_value.first.assert_called_once()
+
+    @patch("app.services.summary_service.Summary")
+    def test_returns_none_when_document_not_found(self, mock_summary_class):
+        """Test returns None when document_id has no summary in DB."""
+        # Given: DB returns None (no summary for document 99)
+        mock_summary_class.query.filter_by.return_value.first.return_value = None
+        service = SummaryService()
+
+        # When: Retrieving summary for non-existent document
+        result = service.get_summary_by_document_id(99)
+
+        # Then: Returns None
+        assert result is None
+        mock_summary_class.query.filter_by.assert_called_once_with(document_id=99)
+
+    @patch("app.services.summary_service.Summary")
+    def test_passes_correct_document_id_to_query(self, mock_summary_class):
+        """Test that the exact document_id is forwarded to the DB filter."""
+        # Given: Any DB response
+        mock_summary_class.query.filter_by.return_value.first.return_value = None
+        service = SummaryService()
+        target_id = 1234
+
+        # When: Querying with a specific ID
+        service.get_summary_by_document_id(target_id)
+
+        # Then: Query is made with that exact ID
+        mock_summary_class.query.filter_by.assert_called_once_with(document_id=target_id)
+
+    @patch("app.services.summary_service.Summary")
+    def test_returns_first_summary_when_multiple_exist(self, mock_summary_class):
+        """Test that .first() is used, returning the first DB result."""
+        # Given: DB has multiple summaries; .first() returns the earliest one
+        mock_first = Mock(spec=Summary)
+        mock_first.document_id = 5
+        mock_summary_class.query.filter_by.return_value.first.return_value = mock_first
+        service = SummaryService()
+
+        # When: Querying document 5
+        result = service.get_summary_by_document_id(5)
+
+        # Then: Returns the first result from the DB query
+        assert result is mock_first
+
+    @patch("app.services.summary_service.Summary")
+    def test_does_not_create_db_connection_directly(self, mock_summary_class):
+        """Test that service delegates DB access to Summary.query, not raw SQL."""
+        # Given: Mock summary returned by query
+        mock_summary_class.query.filter_by.return_value.first.return_value = Mock(
+            spec=Summary
+        )
+        service = SummaryService()
+
+        # When: Calling get_summary_by_document_id
+        service.get_summary_by_document_id(10)
+
+        # Then: DB access is routed through Summary.query.filter_by (ORM layer)
+        mock_summary_class.query.filter_by.assert_called_once()
