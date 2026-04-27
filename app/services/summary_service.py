@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Any
 
 from openai import OpenAI
+
+from app.models.summary import Summary
 
 
 def initialize_openai_client(api_key: str | None = None) -> OpenAI | None:
@@ -18,11 +19,39 @@ def initialize_openai_client(api_key: str | None = None) -> OpenAI | None:
 
 
 class SummaryService:
-    """Service layer for text summarization workflows."""
+    """Service layer for text summarization workflows and summary retrieval."""
 
     def __init__(self, api_key: str | None = None, model: str = "gpt-4o-mini") -> None:
         self.model = model
         self.client = initialize_openai_client(api_key)
+
+    def get_summary_by_document_id(self, document_id: int) -> Summary | None:
+        """
+        Retrieve a summary record by document_id from the database.
+
+        Args:
+            document_id: The ID of the document to retrieve summary for
+
+        Returns:
+            Summary object if found, None otherwise
+        """
+        return Summary.query.filter_by(document_id=document_id).first()
+
+    def check_user_ownership(self, summary: Summary, user_id: int) -> bool:
+        """
+        Check if a user owns a summary based on user_id.
+
+        Args:
+            summary: Summary object to check ownership for
+            user_id: The user ID to check against
+
+        Returns:
+            True if user owns the summary or summary has no user restriction,
+            False if user doesn't own the summary
+        """
+        if summary.user_id is None:
+            return True
+        return summary.user_id == user_id
 
     @staticmethod
     def detect_language(text: str) -> str:
@@ -63,7 +92,8 @@ class SummaryService:
         """Summarize long text by chunking and recursively summarizing."""
         chunks = [text[i : i + max_chunk_chars] for i in range(0, len(text), max_chunk_chars)]
         partial_summaries = [
-            self._summarize_with_retry(chunk, language=language, retries=retries) for chunk in chunks
+            self._summarize_with_retry(chunk, language=language, retries=retries)
+            for chunk in chunks
         ]
         combined = "\n".join(partial_summaries)
         return self._summarize_with_retry(combined, language=language, retries=retries)
@@ -130,7 +160,11 @@ class SummaryService:
         if not normalized:
             return ""
 
-        parts = [segment.strip() for segment in normalized.replace("?", ".").split(".") if segment.strip()]
+        parts = [
+            segment.strip()
+            for segment in normalized.replace("?", ".").split(".")
+            if segment.strip()
+        ]
         if not parts:
             parts = [normalized]
 

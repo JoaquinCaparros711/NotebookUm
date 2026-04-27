@@ -1,8 +1,9 @@
 """Routes for summaries API endpoints"""
 
 from flask import Blueprint, jsonify, request
-from app.models.summary import Summary
-from app.utils.errors import not_found, forbidden
+
+from app.services.summary_service import SummaryService
+from app.utils.errors import forbidden, not_found
 
 summaries_bp = Blueprint("summaries", __name__, url_prefix="/api/v1/summaries")
 
@@ -18,23 +19,28 @@ def get_document_summary(document_id: int):
     Returns:
         JSON response with summary data or error
     """
-    # Query for summary by document_id
-    summary = Summary.query.filter_by(document_id=document_id).first()
+    service = SummaryService()
+    summary = service.get_summary_by_document_id(document_id)
 
     if not summary:
         return not_found(
             detail=f"Summary for document {document_id} not found",
-            instance=f"/api/v1/summaries/document/{document_id}"
+            instance=f"/api/v1/summaries/document/{document_id}",
         )
 
-    # Check authorization: Mock authentication via X-User-ID header
-    # In production, this would be replaced with actual authentication
     requesting_user_id = request.headers.get("X-User-ID")
-    if requesting_user_id and summary.user_id:
-        if int(requesting_user_id) != summary.user_id:
+    if requesting_user_id:
+        try:
+            user_id = int(requesting_user_id)
+            if not service.check_user_ownership(summary, user_id):
+                return forbidden(
+                    detail="Access denied: You are not authorized to view this document summary",
+                    instance=f"/api/v1/summaries/document/{document_id}",
+                )
+        except ValueError:
             return forbidden(
-                detail="Access denied: You are not authorized to view this document summary",
-                instance=f"/api/v1/summaries/document/{document_id}"
+                detail="Invalid user ID",
+                instance=f"/api/v1/summaries/document/{document_id}",
             )
 
     return jsonify(summary.to_dict()), 200
