@@ -77,7 +77,7 @@ docker logs -f notebookum
 
 | Servicio | Usuario | Contraseña |
 |----------|---------|-----------|
-| MySQL | root | Joaco711$ |
+| MySQL | root | Tu clave|
 | Redis | - | Sin contraseña |
 | Flask | - | OPENAI_API_KEY en `.env` |
 
