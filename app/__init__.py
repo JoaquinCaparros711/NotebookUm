@@ -45,13 +45,14 @@ def register_blueprints(app: Flask) -> None:
     from .routes.intelligence import intelligence_bp
     from .routes.users import users_bp
     from .routes.summaries import summaries_bp
-    from .routes.documents import documents_bp
+    from .routes.documents import documents_bp, documents_list_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(intelligence_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(summaries_bp)
     app.register_blueprint(documents_bp)
+    app.register_blueprint(documents_list_bp)
 
 
 

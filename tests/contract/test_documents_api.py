@@ -9,6 +9,9 @@ from app.database import db
 
 
 UPLOAD_ENDPOINT = "/api/v1/documento/upload"
+LIST_ENDPOINT = "/api/v1/documentos"
+USERS_ENDPOINT = "/api/v1/users"
+PDF_BYTES = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"
 
 
 @pytest.fixture
@@ -27,6 +30,27 @@ def app():
 def client(app):
     """Create a test client for the app."""
     return app.test_client()
+
+
+def _create_user(client, email, nombre):
+    response = client.post(USERS_ENDPOINT, json={"email": email, "nombre": nombre})
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data is not None
+    return data["id"]
+
+
+def _upload_document_for_user(client, user_id, filename):
+    response = client.post(
+        UPLOAD_ENDPOINT,
+        data={"file": (io.BytesIO(PDF_BYTES), filename, "application/pdf")},
+        headers={"X-User-ID": str(user_id)},
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 202
+    data = response.get_json()
+    assert data is not None
+    return data["document_id"]
 
 
 @pytest.mark.contract
@@ -168,4 +192,66 @@ class TestUploadDocuments:
         assert data["title"] == "Internal Server Error"
         assert data["status"] == 500
         assert data["instance"] == UPLOAD_ENDPOINT
+
+
+@pytest.mark.contract
+class TestListDocuments:
+    """Contract tests for GET /api/v1/documentos."""
+
+    def test_list_all_documents_for_authenticated_user(self, client):
+        """The endpoint must return only documents owned by the requesting user."""
+        owner_id = _create_user(client, "docs_owner@example.com", "Docs Owner")
+        other_id = _create_user(client, "docs_other@example.com", "Docs Other")
+
+        _upload_document_for_user(client, owner_id, "owner_doc_1.pdf")
+        _upload_document_for_user(client, owner_id, "owner_doc_2.pdf")
+        _upload_document_for_user(client, other_id, "other_doc_1.pdf")
+
+        response = client.get(LIST_ENDPOINT, headers={"X-User-ID": str(owner_id)})
+
+        assert response.status_code == 200
+        assert response.content_type == "application/json"
+        payload = response.get_json()
+        assert payload is not None
+
+        items = payload["items"] if isinstance(payload, dict) and "items" in payload else payload
+        assert isinstance(items, list)
+        assert len(items) >= 2
+        assert all(item.get("usuario_id") == owner_id for item in items)
+
+    def test_list_documents_supports_pagination_when_available(self, client):
+        """If pagination is implemented, contract validates shape and page size."""
+        user_id = _create_user(client, "docs_page@example.com", "Docs Page")
+        for idx in range(3):
+            _upload_document_for_user(client, user_id, f"paged_doc_{idx}.pdf")
+
+        response = client.get(f"{LIST_ENDPOINT}?page=1&per_page=2", headers={"X-User-ID": str(user_id)})
+
+        assert response.status_code == 200
+        assert response.content_type == "application/json"
+        payload = response.get_json()
+        assert payload is not None
+
+        if isinstance(payload, dict) and "items" in payload:
+            assert isinstance(payload["items"], list)
+            assert len(payload["items"]) <= 2
+            assert any(key in payload for key in ("page", "per_page", "total", "pages", "has_next"))
+        else:
+            assert isinstance(payload, list)
+            assert len(payload) >= 1
+
+    def test_list_documents_returns_empty_array_for_new_user(self, client):
+        """A newly created user with no uploads must receive an empty list payload."""
+        new_user_id = _create_user(client, "docs_new@example.com", "Docs New")
+
+        response = client.get(LIST_ENDPOINT, headers={"X-User-ID": str(new_user_id)})
+
+        assert response.status_code == 200
+        assert response.content_type == "application/json"
+        payload = response.get_json()
+        assert payload is not None
+
+        items = payload["items"] if isinstance(payload, dict) and "items" in payload else payload
+        assert isinstance(items, list)
+        assert items == []
 

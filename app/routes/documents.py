@@ -21,6 +21,7 @@ from app.services.validation import (
 from app.utils.errors import internal_server_error, not_found
 
 documents_bp = Blueprint("documents", __name__, url_prefix="/api/v1/documento")
+documents_list_bp = Blueprint("documents_list", __name__, url_prefix="/api/v1/documentos")
 
 
 @documents_bp.route("/upload", methods=["POST"])
@@ -127,6 +128,60 @@ def get_document_status(document_id: int):
         ),
         200,
     )
+
+
+@documents_list_bp.route("", methods=["GET"])
+@documents_list_bp.route("/", methods=["GET"])
+def list_documents():
+    """List documents that belong to the authenticated user."""
+    user_id = request.headers.get("X-User-ID", "1")
+    try:
+        usuario_id = int(user_id)
+    except ValueError:
+        return create_rfc9457_error(
+            detail="Invalid X-User-ID header value.",
+            instance="/api/v1/documentos",
+        )
+
+    page_arg = request.args.get("page")
+    per_page_arg = request.args.get("per_page")
+    if page_arg is not None and per_page_arg is not None:
+        try:
+            page = int(page_arg)
+            per_page = int(per_page_arg)
+            if page < 1 or per_page < 1:
+                raise ValueError
+        except ValueError:
+            return create_rfc9457_error(
+                detail="Query params 'page' and 'per_page' must be positive integers.",
+                instance="/api/v1/documentos",
+            )
+
+        pagination = (
+            HistorialDocumento.query.filter_by(usuario_id=usuario_id)
+            .order_by(HistorialDocumento.id.desc())
+            .paginate(page=page, per_page=per_page, error_out=False)
+        )
+        return (
+            jsonify(
+                {
+                    "items": [document.to_dict() for document in pagination.items],
+                    "page": pagination.page,
+                    "per_page": pagination.per_page,
+                    "total": pagination.total,
+                    "pages": pagination.pages,
+                    "has_next": pagination.has_next,
+                }
+            ),
+            200,
+        )
+
+    documents = (
+        HistorialDocumento.query.filter_by(usuario_id=usuario_id)
+        .order_by(HistorialDocumento.id.desc())
+        .all()
+    )
+    return jsonify([document.to_dict() for document in documents]), 200
 
 
 def _safe_delete(path: str) -> None:
