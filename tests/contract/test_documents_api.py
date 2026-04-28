@@ -53,6 +53,10 @@ def _upload_document_for_user(client, user_id, filename):
     return data["document_id"]
 
 
+def _document_endpoint(document_id):
+    return f"/api/v1/documento/{document_id}"
+
+
 @pytest.mark.contract
 class TestUploadDocuments:
     """Contract tests for POST /api/v1/documento/upload."""
@@ -254,4 +258,55 @@ class TestListDocuments:
         items = payload["items"] if isinstance(payload, dict) and "items" in payload else payload
         assert isinstance(items, list)
         assert items == []
+
+
+@pytest.mark.contract
+class TestPatchDocumentMetadata:
+    """Contract tests for PATCH /api/v1/documento/{id}."""
+
+    def test_patch_document_updates_metadata(self, client):
+        """Owner must be able to update document metadata."""
+        owner_id = _create_user(client, "patch_owner@example.com", "Patch Owner")
+        document_id = _upload_document_for_user(client, owner_id, "before_name.pdf")
+
+        response = client.patch(
+            _document_endpoint(document_id),
+            json={"nombre_archivo": "after_name.pdf"},
+            headers={"X-User-ID": str(owner_id)},
+        )
+
+        assert response.status_code == 200
+        assert response.content_type == "application/json"
+        payload = response.get_json()
+        assert payload is not None
+        assert payload["id"] == document_id
+        assert payload["usuario_id"] == owner_id
+        assert payload["nombre_archivo"] == "after_name.pdf"
+
+    def test_patch_document_returns_404_when_not_found(self, client):
+        """PATCH must return 404 when the document does not exist."""
+        user_id = _create_user(client, "patch_not_found@example.com", "Patch Not Found")
+        response = client.patch(
+            _document_endpoint(999999),
+            json={"nombre_archivo": "missing.pdf"},
+            headers={"X-User-ID": str(user_id)},
+        )
+
+        assert response.status_code == 404
+        assert response.content_type in ("application/problem+json", "application/json")
+
+    def test_patch_document_returns_403_for_non_owner(self, client):
+        """PATCH must return 403 when user tries to update foreign document."""
+        owner_id = _create_user(client, "patch_doc_owner@example.com", "Patch Doc Owner")
+        intruder_id = _create_user(client, "patch_intruder@example.com", "Patch Intruder")
+        document_id = _upload_document_for_user(client, owner_id, "owner_only.pdf")
+
+        response = client.patch(
+            _document_endpoint(document_id),
+            json={"nombre_archivo": "hacked_name.pdf"},
+            headers={"X-User-ID": str(intruder_id)},
+        )
+
+        assert response.status_code == 403
+        assert response.content_type in ("application/problem+json", "application/json")
 
