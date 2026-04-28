@@ -169,7 +169,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 ### Pruebas para Historia de Usuario 4 (TDD - ESCRIBIR PRIMERO, ASEGURAR QUE FALLEN)
 
 - [x] T061 [#356](https://github.com/JoaquinCaparros711/NotebookUm/issues/356) [P] [US4] Escribir prueba de contrato para GET /api/v1/documentos en tests/contract/test_documents_api.py (probar listar todos los documentos del usuario, probar paginación si está implementada, probar lista vacía para usuario nuevo)
-- [ ] T062 [#357](https://github.com/JoaquinCaparros711/NotebookUm/issues/357) [P] [US4] Escribir prueba de contrato para PATCH /api/v1/documento/{id} en tests/contract/test_documents_api.py (probar actualización de metadata, probar 404 para inexistente, probar 403 para no autorizado)
+- [x] T062 [#357](https://github.com/JoaquinCaparros711/NotebookUm/issues/357) [P] [US4] Escribir prueba de contrato para PATCH /api/v1/documento/{id} en tests/contract/test_documents_api.py (probar actualización de metadata, probar 404 para inexistente, probar 403 para no autorizado)
 - [ ] T063 [#358](https://github.com/JoaquinCaparros711/NotebookUm/issues/358) [P] [US4] Escribir prueba de contrato para DELETE /api/v1/documento/{id} en tests/contract/test_documents_api.py (probar eliminación exitosa, probar eliminación en cascada de resúmenes, probar 404 para inexistente)
 
 ### Implementación para Historia de Usuario 4
