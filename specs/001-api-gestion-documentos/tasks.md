@@ -174,7 +174,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 
 ### Implementación para Historia de Usuario 4
 
-- [ ] T064 [#359](https://github.com/JoaquinCaparros711/NotebookUm/issues/359) [US4] Agregar endpoint GET /api/v1/documentos a app/routes/documents.py (retornar todos los documentos del usuario autenticado con soporte de paginación)
+- [x] T064 [#359](https://github.com/JoaquinCaparros711/NotebookUm/issues/359) [US4] Agregar endpoint GET /api/v1/documentos a app/routes/documents.py (retornar todos los documentos del usuario autenticado con soporte de paginación)
 - [ ] T065 [#360](https://github.com/JoaquinCaparros711/NotebookUm/issues/360) [US4] Agregar endpoint PATCH /api/v1/documento/{id} a app/routes/documents.py (actualizar metadata del documento, validar propiedad)
 - [ ] T066 [#361](https://github.com/JoaquinCaparros711/NotebookUm/issues/361) [US4] Agregar endpoint DELETE /api/v1/documento/{id} a app/routes/documents.py (eliminar documento y cascadear a resúmenes, validar propiedad)
 - [ ] T067 [#362](https://github.com/JoaquinCaparros711/NotebookUm/issues/362) [US4] Agregar métodos a DocumentService en app/services/document_service.py (list_user_documents, update_document, delete_document)

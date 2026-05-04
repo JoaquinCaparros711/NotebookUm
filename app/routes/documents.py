@@ -133,7 +133,7 @@ def get_document_status(document_id: int):
 @documents_list_bp.route("", methods=["GET"])
 @documents_list_bp.route("/", methods=["GET"])
 def list_documents():
-    """List documents that belong to the authenticated user."""
+    """GET /api/v1/documentos: all documents for ``X-User-ID``, or paginated with ``page`` and ``per_page``."""
     user_id = request.headers.get("X-User-ID", "1")
     try:
         usuario_id = int(user_id)
