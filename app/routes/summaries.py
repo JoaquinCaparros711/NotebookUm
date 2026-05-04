@@ -4,6 +4,8 @@ import logging
 
 from flask import Blueprint, Response, jsonify, request
 
+from app.utils.auth import parse_x_user_id
+
 from app.services.summary_service import SummaryService
 from app.utils.errors import bad_request, forbidden, internal_server_error, not_found
 
@@ -73,7 +75,7 @@ def get_document_summary(document_id: int) -> Response:
     raw_user_id = request.headers.get("X-User-ID")
     if raw_user_id is not None:
         try:
-            user_id = int(raw_user_id)
+            user_id = parse_x_user_id(raw_user_id)
         except ValueError:
             return bad_request(
                 detail="X-User-ID header must be a valid integer",

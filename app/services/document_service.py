@@ -138,9 +138,10 @@ class DocumentService:
             raise DocumentForbiddenError("You are not allowed to delete this document.")
 
         try:
-            Summary.query.filter(Summary.documento_id == document_id).delete(
-                synchronize_session=False
-            )
+            # Rely on database-level ON DELETE CASCADE and SQLAlchemy relationship
+            # cascade settings to remove dependent summaries when the document
+            # is deleted. This avoids manual delete queries which may bypass
+            # relationship bookkeeping.
             db.session.delete(document)
             db.session.commit()
         except SQLAlchemyError:

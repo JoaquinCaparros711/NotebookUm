@@ -25,6 +25,7 @@ from app.services.validation import (
     validate_file_size,
     validate_pdf_content_type,
 )
+from app.utils.auth import parse_x_user_id
 from app.utils.errors import forbidden, internal_server_error, not_found
 
 documents_bp = Blueprint("documents", __name__, url_prefix="/api/v1/documento")
@@ -50,9 +51,9 @@ def upload_document():
             instance="/api/v1/documento/upload",
         )
 
-    user_id = request.headers.get("X-User-ID", "1")
+    raw_user_id = request.headers.get("X-User-ID")
     try:
-        usuario_id = int(user_id)
+        usuario_id = parse_x_user_id(raw_user_id) or 1
     except ValueError:
         return create_rfc9457_error(
             detail="Invalid X-User-ID header value.",
@@ -140,9 +141,9 @@ def get_document_status(document_id: int):
 @documents_bp.route("/<int:document_id>", methods=["PATCH"])
 def patch_document(document_id: int):
     """PATCH /api/v1/documento/{id}: update metadata; requires ownership via ``X-User-ID``."""
-    user_id = request.headers.get("X-User-ID", "1")
+    raw_user_id = request.headers.get("X-User-ID")
     try:
-        usuario_id = int(user_id)
+        usuario_id = parse_x_user_id(raw_user_id) or 1
     except ValueError:
         return create_rfc9457_error(
             detail="Invalid X-User-ID header value.",
@@ -172,9 +173,9 @@ def patch_document(document_id: int):
 @documents_bp.route("/<int:document_id>", methods=["DELETE"])
 def delete_document(document_id: int):
     """DELETE /api/v1/documento/{id}: remove document and linked summaries (owner only)."""
-    user_id = request.headers.get("X-User-ID", "1")
+    raw_user_id = request.headers.get("X-User-ID")
     try:
-        usuario_id = int(user_id)
+        usuario_id = parse_x_user_id(raw_user_id) or 1
     except ValueError:
         return create_rfc9457_error(
             detail="Invalid X-User-ID header value.",
@@ -201,9 +202,9 @@ def delete_document(document_id: int):
 @documents_list_bp.route("/", methods=["GET"])
 def list_documents():
     """GET /api/v1/documentos: all documents for ``X-User-ID``, or paginated with ``page`` and ``per_page``."""
-    user_id = request.headers.get("X-User-ID", "1")
+    raw_user_id = request.headers.get("X-User-ID")
     try:
-        usuario_id = int(user_id)
+        usuario_id = parse_x_user_id(raw_user_id) or 1
     except ValueError:
         return create_rfc9457_error(
             detail="Invalid X-User-ID header value.",
