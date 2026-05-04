@@ -181,7 +181,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T068 [#363](https://github.com/JoaquinCaparros711/NotebookUm/issues/363) [US4] Escribir pruebas unitarias para DocumentService en tests/unit/test_services.py
 - [x] T069 [#364](https://github.com/JoaquinCaparros711/NotebookUm/issues/364) [US4] Actualizar modelo Resumen para asegurar eliminación en cascada cuando se elimina un documento
 - [x] T070 [#365](https://github.com/JoaquinCaparros711/NotebookUm/issues/365) [US4] Agregar verificaciones de autorización para todas las operaciones CRUD
-- [ ] T071 [#366](https://github.com/JoaquinCaparros711/NotebookUm/issues/366) [US4] Ejecutar todas las pruebas de Historia de Usuario 4: `uv run pytest tests/contract/test_documents_api.py -k "US4" -v`
+- [x] T071 [#366](https://github.com/JoaquinCaparros711/NotebookUm/issues/366) [US4] Ejecutar todas las pruebas de Historia de Usuario 4: `uv run pytest tests/contract/test_documents_api.py -k "US4" -v`
 
 **Punto de control**: En este punto, la Historia de Usuario 4 debería ser completamente funcional - los usuarios tienen control total sobre su historial de documentos
 
