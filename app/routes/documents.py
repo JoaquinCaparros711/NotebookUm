@@ -12,6 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import db
 from app.models.document import HistorialDocumento
+from app.models.summary import Summary
 from app.services.async_tasks import process_document_task
 from app.services.validation import (
     create_rfc9457_error,
@@ -189,6 +190,45 @@ def patch_document(document_id: int):
         )
 
     return jsonify(document.to_dict()), 200
+
+
+@documents_bp.route("/<int:document_id>", methods=["DELETE"])
+def delete_document(document_id: int):
+    """DELETE /api/v1/documento/{id}: remove document and linked summaries (owner only)."""
+    user_id = request.headers.get("X-User-ID", "1")
+    try:
+        usuario_id = int(user_id)
+    except ValueError:
+        return create_rfc9457_error(
+            detail="Invalid X-User-ID header value.",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    document = db.session.get(HistorialDocumento, document_id)
+    if document is None:
+        return not_found(
+            detail=f"Document with ID {document_id} not found",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    if document.usuario_id != usuario_id:
+        return forbidden(
+            detail="You are not allowed to delete this document.",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    try:
+        Summary.query.filter(Summary.documento_id == document_id).delete(synchronize_session=False)
+        db.session.delete(document)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return internal_server_error(
+            detail="Unable to delete document.",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    return "", 204
 
 
 @documents_list_bp.route("", methods=["GET"])
