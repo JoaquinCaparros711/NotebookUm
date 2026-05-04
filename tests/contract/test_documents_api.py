@@ -1,11 +1,13 @@
-"""Contract tests for POST /api/v1/documento/upload endpoint."""
+"""Contract tests for document API endpoints (upload, list, patch, delete)."""
 
 import io
+from datetime import datetime
 
 import pytest
 
 from app import create_app
 from app.database import db
+from app.models.summary import Summary
 
 
 UPLOAD_ENDPOINT = "/api/v1/documento/upload"
@@ -309,4 +311,78 @@ class TestPatchDocumentMetadata:
 
         assert response.status_code == 403
         assert response.content_type in ("application/problem+json", "application/json")
+
+
+@pytest.mark.contract
+class TestDeleteDocument:
+    """Contract tests for DELETE /api/v1/documento/{id}."""
+
+    def test_delete_document_success(self, client):
+        """Owner DELETE removes document; list and status endpoints reflect removal."""
+        owner_id = _create_user(client, "del_doc_owner@example.com", "Del Doc Owner")
+        document_id = _upload_document_for_user(client, owner_id, "to_delete.pdf")
+
+        resp = client.delete(
+            _document_endpoint(document_id),
+            headers={"X-User-ID": str(owner_id)},
+        )
+
+        assert resp.status_code in (200, 204)
+
+        list_resp = client.get(LIST_ENDPOINT, headers={"X-User-ID": str(owner_id)})
+        assert list_resp.status_code == 200
+        payload = list_resp.get_json()
+        assert payload is not None
+        items = payload["items"] if isinstance(payload, dict) and "items" in payload else payload
+        ids = [item["id"] for item in items]
+        assert document_id not in ids
+
+        status_resp = client.get(f"{_document_endpoint(document_id)}/status")
+        assert status_resp.status_code == 404
+
+    def test_delete_document_cascades_summaries(self, client, app):
+        """DELETE removes linked summaries (verified via GET /api/v1/summaries/document/{id})."""
+        owner_id = _create_user(client, "del_cascade@example.com", "Del Cascade")
+        document_id = _upload_document_for_user(client, owner_id, "cascade.pdf")
+
+        with app.app_context():
+            summary = Summary(
+                document_id=document_id,
+                summary_text="Resumen ligado al documento.",
+                status="completed",
+                user_id=owner_id,
+                created_at=datetime(2026, 5, 1, 12, 0, 0),
+                updated_at=datetime(2026, 5, 1, 12, 0, 0),
+            )
+            db.session.add(summary)
+            db.session.commit()
+
+        sum_resp = client.get(f"/api/v1/summaries/document/{document_id}")
+        assert sum_resp.status_code == 200
+
+        del_resp = client.delete(
+            _document_endpoint(document_id),
+            headers={"X-User-ID": str(owner_id)},
+        )
+        assert del_resp.status_code in (200, 204)
+
+        sum_after = client.get(f"/api/v1/summaries/document/{document_id}")
+        assert sum_after.status_code == 404
+        assert sum_after.content_type == "application/problem+json"
+
+    def test_delete_document_returns_404_when_not_found(self, client):
+        """DELETE for a non-existent document returns 404 RFC 9457 problem detail."""
+        user_id = _create_user(client, "del_nf@example.com", "Del Not Found")
+        resp = client.delete(
+            _document_endpoint(999999),
+            headers={"X-User-ID": str(user_id)},
+        )
+
+        assert resp.status_code == 404
+        assert resp.content_type == "application/problem+json"
+        data = resp.get_json()
+        assert data is not None
+        assert data["type"] == "about:blank"
+        assert data["title"] == "Not Found"
+        assert data["status"] == 404
 
