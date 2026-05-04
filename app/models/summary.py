@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import synonym
+from sqlalchemy import ForeignKey
 
 from app.database import db
 
@@ -16,6 +17,7 @@ class Resumen(db.Model):
     documento_id = db.Column(
         "document_id",
         db.Integer,
+        ForeignKey("historial_documentos.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

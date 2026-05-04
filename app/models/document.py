@@ -34,6 +34,8 @@ class HistorialDocumento(db.Model):
         Summary,
         primaryjoin=lambda: HistorialDocumento.id == foreign(Summary.documento_id),
         lazy=True,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     def to_dict(self) -> dict:
