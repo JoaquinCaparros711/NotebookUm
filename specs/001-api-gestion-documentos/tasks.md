@@ -177,7 +177,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T064 [#359](https://github.com/JoaquinCaparros711/NotebookUm/issues/359) [US4] Agregar endpoint GET /api/v1/documentos a app/routes/documents.py (retornar todos los documentos del usuario autenticado con soporte de paginación)
 - [x] T065 [#360](https://github.com/JoaquinCaparros711/NotebookUm/issues/360) [US4] Agregar endpoint PATCH /api/v1/documento/{id} a app/routes/documents.py (actualizar metadata del documento, validar propiedad)
 - [x] T066 [#361](https://github.com/JoaquinCaparros711/NotebookUm/issues/361) [US4] Agregar endpoint DELETE /api/v1/documento/{id} a app/routes/documents.py (eliminar documento y cascadear a resúmenes, validar propiedad)
-- [ ] T067 [#362](https://github.com/JoaquinCaparros711/NotebookUm/issues/362) [US4] Agregar métodos a DocumentService en app/services/document_service.py (list_user_documents, update_document, delete_document)
+- [x] T067 [#362](https://github.com/JoaquinCaparros711/NotebookUm/issues/362) [US4] Agregar métodos a DocumentService en app/services/document_service.py (list_user_documents, update_document, delete_document)
 - [ ] T068 [#363](https://github.com/JoaquinCaparros711/NotebookUm/issues/363) [US4] Escribir pruebas unitarias para DocumentService en tests/unit/test_services.py
 - [ ] T069 [#364](https://github.com/JoaquinCaparros711/NotebookUm/issues/364) [US4] Actualizar modelo Resumen para asegurar eliminación en cascada cuando se elimina un documento
 - [ ] T070 [#365](https://github.com/JoaquinCaparros711/NotebookUm/issues/365) [US4] Agregar verificaciones de autorización para todas las operaciones CRUD

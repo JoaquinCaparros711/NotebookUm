@@ -12,8 +12,14 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import db
 from app.models.document import HistorialDocumento
-from app.models.summary import Summary
 from app.services.async_tasks import process_document_task
+from app.services.document_service import (
+    DocumentForbiddenError,
+    DocumentNotFoundError,
+    DocumentService,
+    DocumentServiceError,
+    DocumentValidationError,
+)
 from app.services.validation import (
     create_rfc9457_error,
     validate_file_size,
@@ -143,50 +149,21 @@ def patch_document(document_id: int):
             instance=f"/api/v1/documento/{document_id}",
         )
 
-    document = db.session.get(HistorialDocumento, document_id)
-    if document is None:
-        return not_found(
-            detail=f"Document with ID {document_id} not found",
-            instance=f"/api/v1/documento/{document_id}",
-        )
-
-    if document.usuario_id != usuario_id:
-        return forbidden(
-            detail="You are not allowed to modify this document.",
-            instance=f"/api/v1/documento/{document_id}",
-        )
-
-    data = request.get_json(silent=True)
-    if not isinstance(data, dict):
-        return create_rfc9457_error(
-            detail="Request body must be a JSON object.",
-            instance=f"/api/v1/documento/{document_id}",
-        )
-
-    updated = False
-    if "nombre_archivo" in data:
-        name = data["nombre_archivo"]
-        if not isinstance(name, str) or not name.strip():
-            return create_rfc9457_error(
-                detail="Field 'nombre_archivo' must be a non-empty string.",
-                instance=f"/api/v1/documento/{document_id}",
-            )
-        document.nombre_archivo = name.strip()
-        updated = True
-
-    if not updated:
-        return create_rfc9457_error(
-            detail="No supported metadata fields to update. Supported: nombre_archivo.",
-            instance=f"/api/v1/documento/{document_id}",
-        )
-
+    instance = f"/api/v1/documento/{document_id}"
     try:
-        db.session.commit()
-    except SQLAlchemyError:
-        db.session.rollback()
+        document = DocumentService.update_document(
+            document_id, usuario_id, request.get_json(silent=True)
+        )
+    except DocumentNotFoundError as exc:
+        return not_found(detail=str(exc), instance=instance)
+    except DocumentForbiddenError as exc:
+        return forbidden(detail=str(exc), instance=instance)
+    except DocumentValidationError as exc:
+        return create_rfc9457_error(detail=str(exc), instance=instance)
+    except DocumentServiceError:
         return internal_server_error(
             detail="Unable to update document.",
-            instance=f"/api/v1/documento/{document_id}",
+            instance=instance,
         )
 
     return jsonify(document.to_dict()), 200
@@ -204,28 +181,17 @@ def delete_document(document_id: int):
             instance=f"/api/v1/documento/{document_id}",
         )
 
-    document = db.session.get(HistorialDocumento, document_id)
-    if document is None:
-        return not_found(
-            detail=f"Document with ID {document_id} not found",
-            instance=f"/api/v1/documento/{document_id}",
-        )
-
-    if document.usuario_id != usuario_id:
-        return forbidden(
-            detail="You are not allowed to delete this document.",
-            instance=f"/api/v1/documento/{document_id}",
-        )
-
+    instance = f"/api/v1/documento/{document_id}"
     try:
-        Summary.query.filter(Summary.documento_id == document_id).delete(synchronize_session=False)
-        db.session.delete(document)
-        db.session.commit()
-    except SQLAlchemyError:
-        db.session.rollback()
+        DocumentService.delete_document(document_id, usuario_id)
+    except DocumentNotFoundError as exc:
+        return not_found(detail=str(exc), instance=instance)
+    except DocumentForbiddenError as exc:
+        return forbidden(detail=str(exc), instance=instance)
+    except DocumentServiceError:
         return internal_server_error(
             detail="Unable to delete document.",
-            instance=f"/api/v1/documento/{document_id}",
+            instance=instance,
         )
 
     return "", 204
@@ -258,31 +224,31 @@ def list_documents():
                 instance="/api/v1/documentos",
             )
 
-        pagination = (
-            HistorialDocumento.query.filter_by(usuario_id=usuario_id)
-            .order_by(HistorialDocumento.id.desc())
-            .paginate(page=page, per_page=per_page, error_out=False)
-        )
+        try:
+            result = DocumentService.list_user_documents(
+                usuario_id, page=page, per_page=per_page
+            )
+        except DocumentValidationError as exc:
+            return create_rfc9457_error(detail=str(exc), instance="/api/v1/documentos")
+
+        meta = result["pagination"]
+        assert meta is not None
         return (
             jsonify(
                 {
-                    "items": [document.to_dict() for document in pagination.items],
-                    "page": pagination.page,
-                    "per_page": pagination.per_page,
-                    "total": pagination.total,
-                    "pages": pagination.pages,
-                    "has_next": pagination.has_next,
+                    "items": [d.to_dict() for d in result["items"]],
+                    "page": meta["page"],
+                    "per_page": meta["per_page"],
+                    "total": meta["total"],
+                    "pages": meta["pages"],
+                    "has_next": meta["has_next"],
                 }
             ),
             200,
         )
 
-    documents = (
-        HistorialDocumento.query.filter_by(usuario_id=usuario_id)
-        .order_by(HistorialDocumento.id.desc())
-        .all()
-    )
-    return jsonify([document.to_dict() for document in documents]), 200
+    result = DocumentService.list_user_documents(usuario_id)
+    return jsonify([d.to_dict() for d in result["items"]]), 200
 
 
 def _safe_delete(path: str) -> None:
