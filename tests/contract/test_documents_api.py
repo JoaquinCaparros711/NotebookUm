@@ -317,7 +317,6 @@ class TestPatchDocumentMetadata:
 class TestDeleteDocument:
     """Contract tests for DELETE /api/v1/documento/{id}."""
 
-    @pytest.mark.skip(reason="Requiere ruta DELETE implementada en T066.")
     def test_delete_document_success(self, client):
         """Owner DELETE removes document; list and status endpoints reflect removal."""
         owner_id = _create_user(client, "del_doc_owner@example.com", "Del Doc Owner")
@@ -341,7 +340,6 @@ class TestDeleteDocument:
         status_resp = client.get(f"{_document_endpoint(document_id)}/status")
         assert status_resp.status_code == 404
 
-    @pytest.mark.skip(reason="Requiere ruta DELETE implementada en T066.")
     def test_delete_document_cascades_summaries(self, client, app):
         """DELETE removes linked summaries (verified via GET /api/v1/summaries/document/{id})."""
         owner_id = _create_user(client, "del_cascade@example.com", "Del Cascade")
@@ -375,8 +373,9 @@ class TestDeleteDocument:
     def test_delete_document_returns_404_when_not_found(self, client):
         """DELETE for a non-existent document returns 404 RFC 9457 problem detail."""
         user_id = _create_user(client, "del_nf@example.com", "Del Not Found")
+        endpoint = _document_endpoint(999999)
         resp = client.delete(
-            _document_endpoint(999999),
+            endpoint,
             headers={"X-User-ID": str(user_id)},
         )
 
@@ -387,4 +386,5 @@ class TestDeleteDocument:
         assert data["type"] == "about:blank"
         assert data["title"] == "Not Found"
         assert data["status"] == 404
+        assert data["instance"] == endpoint
 
