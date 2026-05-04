@@ -18,7 +18,7 @@ from app.services.validation import (
     validate_file_size,
     validate_pdf_content_type,
 )
-from app.utils.errors import internal_server_error, not_found
+from app.utils.errors import forbidden, internal_server_error, not_found
 
 documents_bp = Blueprint("documents", __name__, url_prefix="/api/v1/documento")
 documents_list_bp = Blueprint("documents_list", __name__, url_prefix="/api/v1/documentos")
@@ -128,6 +128,67 @@ def get_document_status(document_id: int):
         ),
         200,
     )
+
+
+@documents_bp.route("/<int:document_id>", methods=["PATCH"])
+def patch_document(document_id: int):
+    """PATCH /api/v1/documento/{id}: update metadata; requires ownership via ``X-User-ID``."""
+    user_id = request.headers.get("X-User-ID", "1")
+    try:
+        usuario_id = int(user_id)
+    except ValueError:
+        return create_rfc9457_error(
+            detail="Invalid X-User-ID header value.",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    document = db.session.get(HistorialDocumento, document_id)
+    if document is None:
+        return not_found(
+            detail=f"Document with ID {document_id} not found",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    if document.usuario_id != usuario_id:
+        return forbidden(
+            detail="You are not allowed to modify this document.",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return create_rfc9457_error(
+            detail="Request body must be a JSON object.",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    updated = False
+    if "nombre_archivo" in data:
+        name = data["nombre_archivo"]
+        if not isinstance(name, str) or not name.strip():
+            return create_rfc9457_error(
+                detail="Field 'nombre_archivo' must be a non-empty string.",
+                instance=f"/api/v1/documento/{document_id}",
+            )
+        document.nombre_archivo = name.strip()
+        updated = True
+
+    if not updated:
+        return create_rfc9457_error(
+            detail="No supported metadata fields to update. Supported: nombre_archivo.",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return internal_server_error(
+            detail="Unable to update document.",
+            instance=f"/api/v1/documento/{document_id}",
+        )
+
+    return jsonify(document.to_dict()), 200
 
 
 @documents_list_bp.route("", methods=["GET"])
