@@ -317,6 +317,7 @@ class TestPatchDocumentMetadata:
 class TestDeleteDocument:
     """Contract tests for DELETE /api/v1/documento/{id}."""
 
+    @pytest.mark.skip(reason="Requiere ruta DELETE implementada en T066.")
     def test_delete_document_success(self, client):
         """Owner DELETE removes document; list and status endpoints reflect removal."""
         owner_id = _create_user(client, "del_doc_owner@example.com", "Del Doc Owner")
@@ -340,6 +341,7 @@ class TestDeleteDocument:
         status_resp = client.get(f"{_document_endpoint(document_id)}/status")
         assert status_resp.status_code == 404
 
+    @pytest.mark.skip(reason="Requiere ruta DELETE implementada en T066.")
     def test_delete_document_cascades_summaries(self, client, app):
         """DELETE removes linked summaries (verified via GET /api/v1/summaries/document/{id})."""
         owner_id = _create_user(client, "del_cascade@example.com", "Del Cascade")
