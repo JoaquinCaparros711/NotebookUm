@@ -46,6 +46,7 @@ def register_blueprints(app: Flask) -> None:
     from .routes.users import users_bp
     from .routes.summaries import summaries_bp
     from .routes.documents import documents_bp, documents_list_bp
+    from .routes.questions import questions_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(intelligence_bp)
@@ -53,6 +54,7 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(summaries_bp)
     app.register_blueprint(documents_bp)
     app.register_blueprint(documents_list_bp)
+    app.register_blueprint(questions_bp)
 
 
 
