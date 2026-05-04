@@ -1,12 +1,23 @@
-"""Unit tests for UserService and SummaryService"""
+"""Unit tests for UserService, SummaryService, and DocumentService."""
 
 import pytest
+from types import SimpleNamespace
 from unittest.mock import Mock, patch, MagicMock
-from app.services.user_service import UserService, ValidationError
+
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.models.user import User
 from app.models.document import HistorialDocumento
 from app.models.summary import Summary
+from app.services.document_service import (
+    DocumentForbiddenError,
+    DocumentNotFoundError,
+    DocumentService,
+    DocumentServiceError,
+    DocumentValidationError,
+)
 from app.services.summary_service import SummaryService
+from app.services.user_service import UserService, ValidationError
 
 
 class TestUserServiceValidation:
@@ -612,3 +623,150 @@ class TestSummaryServiceStatusMessage:
         # Then: Returns a non-empty fallback (never None, never raises)
         assert result is not None
         assert isinstance(result, str)
+
+
+class TestDocumentServiceListUserDocuments:
+    """Unit tests for DocumentService.list_user_documents."""
+
+    @patch("app.services.document_service.HistorialDocumento")
+    def test_list_returns_all_documents_for_user(self, mock_hist):
+        """Without pagination, returns all items newest-first and pagination None."""
+        doc = Mock()
+        mock_hist.query.filter_by.return_value.order_by.return_value.all.return_value = [doc]
+        result = DocumentService.list_user_documents(usuario_id=7)
+        mock_hist.query.filter_by.assert_called_once_with(usuario_id=7)
+        assert result["pagination"] is None
+        assert result["items"] == [doc]
+
+    @patch("app.services.document_service.HistorialDocumento")
+    def test_list_paginated_includes_metadata(self, mock_hist):
+        """With page and per_page, returns items plus pagination fields."""
+        doc = Mock()
+        pag = Mock()
+        pag.items = [doc]
+        pag.page = 1
+        pag.per_page = 10
+        pag.total = 40
+        pag.pages = 4
+        pag.has_next = True
+        mock_hist.query.filter_by.return_value.order_by.return_value.paginate.return_value = pag
+
+        result = DocumentService.list_user_documents(2, page=1, per_page=10)
+
+        assert result["items"] == [doc]
+        assert result["pagination"] == {
+            "page": 1,
+            "per_page": 10,
+            "total": 40,
+            "pages": 4,
+            "has_next": True,
+        }
+
+    @patch("app.services.document_service.HistorialDocumento")
+    def test_list_invalid_page_raises_validation_error(self, mock_hist):
+        """Non-positive page or per_page raises DocumentValidationError."""
+        with pytest.raises(DocumentValidationError):
+            DocumentService.list_user_documents(1, page=0, per_page=5)
+        mock_hist.query.filter_by.assert_not_called()
+
+
+class TestDocumentServiceUpdateDocument:
+    """Unit tests for DocumentService.update_document."""
+
+    @patch("app.services.document_service.db.session")
+    def test_update_raises_not_found_when_missing(self, mock_session):
+        mock_session.get.return_value = None
+        with pytest.raises(DocumentNotFoundError):
+            DocumentService.update_document(99, 1, {"nombre_archivo": "a.pdf"})
+
+    @patch("app.services.document_service.db.session")
+    def test_update_raises_forbidden_when_wrong_owner(self, mock_session):
+        doc = SimpleNamespace(usuario_id=2, id=1)
+        mock_session.get.return_value = doc
+        with pytest.raises(DocumentForbiddenError):
+            DocumentService.update_document(1, 1, {"nombre_archivo": "a.pdf"})
+
+    @patch("app.services.document_service.db.session")
+    def test_update_raises_validation_when_body_not_object(self, mock_session):
+        doc = SimpleNamespace(usuario_id=1, id=1, nombre_archivo="old.pdf")
+        mock_session.get.return_value = doc
+        with pytest.raises(DocumentValidationError):
+            DocumentService.update_document(1, 1, None)
+
+    @patch("app.services.document_service.db.session")
+    def test_update_raises_validation_when_no_supported_fields(self, mock_session):
+        doc = SimpleNamespace(usuario_id=1, id=1, nombre_archivo="old.pdf")
+        mock_session.get.return_value = doc
+        with pytest.raises(DocumentValidationError):
+            DocumentService.update_document(1, 1, {"other": True})
+
+    @patch("app.services.document_service.db.session")
+    def test_update_raises_validation_when_nombre_empty(self, mock_session):
+        doc = SimpleNamespace(usuario_id=1, id=1, nombre_archivo="old.pdf")
+        mock_session.get.return_value = doc
+        with pytest.raises(DocumentValidationError):
+            DocumentService.update_document(1, 1, {"nombre_archivo": "  "})
+
+    @patch("app.services.document_service.db.session")
+    def test_update_success_commits_and_returns_document(self, mock_session):
+        doc = SimpleNamespace(usuario_id=1, id=5, nombre_archivo="before.pdf")
+        mock_session.get.return_value = doc
+        out = DocumentService.update_document(5, 1, {"nombre_archivo": "after.pdf"})
+        assert doc.nombre_archivo == "after.pdf"
+        assert out is doc
+        mock_session.commit.assert_called_once()
+
+    @patch("app.services.document_service.db.session")
+    def test_update_commit_failure_wraps_in_service_error(self, mock_session):
+        doc = SimpleNamespace(usuario_id=1, id=1, nombre_archivo="x.pdf")
+        mock_session.get.return_value = doc
+        mock_session.commit.side_effect = SQLAlchemyError("db down")
+        with pytest.raises(DocumentServiceError):
+            DocumentService.update_document(1, 1, {"nombre_archivo": "y.pdf"})
+        mock_session.rollback.assert_called_once()
+
+
+class TestDocumentServiceDeleteDocument:
+    """Unit tests for DocumentService.delete_document."""
+
+    @patch("app.services.document_service.Summary")
+    @patch("app.services.document_service.db.session")
+    def test_delete_raises_not_found(self, mock_session, mock_summary):
+        mock_session.get.return_value = None
+        with pytest.raises(DocumentNotFoundError):
+            DocumentService.delete_document(42, 1)
+        mock_summary.query.filter.assert_not_called()
+
+    @patch("app.services.document_service.Summary")
+    @patch("app.services.document_service.db.session")
+    def test_delete_raises_forbidden(self, mock_session, mock_summary):
+        doc = SimpleNamespace(usuario_id=9)
+        mock_session.get.return_value = doc
+        with pytest.raises(DocumentForbiddenError):
+            DocumentService.delete_document(1, 1)
+
+    @patch("app.services.document_service.Summary")
+    @patch("app.services.document_service.db.session")
+    def test_delete_removes_summaries_then_document(self, mock_session, mock_summary):
+        doc = SimpleNamespace(usuario_id=1)
+        mock_session.get.return_value = doc
+        delete_q = Mock()
+        mock_summary.query.filter.return_value = delete_q
+        delete_q.delete.return_value = 2
+
+        DocumentService.delete_document(3, 1)
+
+        delete_q.delete.assert_called_once_with(synchronize_session=False)
+        mock_session.delete.assert_called_once_with(doc)
+        mock_session.commit.assert_called_once()
+
+    @patch("app.services.document_service.Summary")
+    @patch("app.services.document_service.db.session")
+    def test_delete_commit_failure_wraps_in_service_error(self, mock_session, mock_summary):
+        doc = SimpleNamespace(usuario_id=1)
+        mock_session.get.return_value = doc
+        mock_summary.query.filter.return_value.delete.return_value = 1
+        mock_session.commit.side_effect = SQLAlchemyError("fail")
+        with pytest.raises(DocumentServiceError):
+            DocumentService.delete_document(3, 1)
+        mock_session.rollback.assert_called_once()
