@@ -207,7 +207,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 
 ### Implementación para Historia de Usuario 5
 
-- [ ] T077 [#373](https://github.com/JoaquinCaparros711/NotebookUm/issues/373) [US5] Crear modelo HistorialPregunta en app/models/question.py (id, usuario_id, documento_id, pregunta, respuesta, created_at con relaciones)
+- [x] T077 [#373](https://github.com/JoaquinCaparros711/NotebookUm/issues/373) [US5] Crear modelo HistorialPregunta en app/models/question.py (id, usuario_id, documento_id, pregunta, respuesta, created_at con relaciones)
 - [ ] T078 [#374](https://github.com/JoaquinCaparros711/NotebookUm/issues/374) [US5] Crear migración Alembic para tabla historial_preguntas
 - [ ] T079 [#375](https://github.com/JoaquinCaparros711/NotebookUm/issues/375) [US5] Ejecutar migración: `uv run alembic upgrade head`
 - [ ] T080 [#376](https://github.com/JoaquinCaparros711/NotebookUm/issues/376) [US5] Crear QuestionService en app/services/question_service.py (métodos crear, listar, actualizar, eliminar)
