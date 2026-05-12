@@ -83,6 +83,8 @@ class TestingConfig(BaseConfig):
         host="localhost", port=3306, name=":memory:", user="test", password="test"
     )
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    # Use a dummy OpenAI API key for testing
+    OPENAI = OpenAIConfig(api_key="sk-test-dummy-key-for-testing")
 
 
 config = {

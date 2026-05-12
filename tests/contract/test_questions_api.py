@@ -168,6 +168,109 @@ class TestGetQuestions:
 
 @pytest.mark.contract
 class TestPatchQuestion:
+    """Contract tests for PATCH /api/v1/pregunta/<id> (update question)."""
+
+    def test_update_question_pregunta_success(self, client):
+        """Updating a question's pregunta field returns 200 and updated data."""
+        user_id = _create_user(client, "patch_user@example.com", "Patch User")
+        doc_id = _upload_document(client, "patch_doc.pdf")
+        created = _create_question(client, user_id, doc_id, "Original pregunta")
+        question_id = created["id"]
+
+        update_payload = {"pregunta": "Updated pregunta text"}
+        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}", json=update_payload)
+
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data is not None
+        assert data["id"] == question_id
+        assert data["pregunta"] == "Updated pregunta text"
+
+    def test_update_question_respuesta_success(self, client):
+        """Updating a question's respuesta field returns 200 and updated data."""
+        user_id = _create_user(client, "patch_resp@example.com", "Patch Resp User")
+        doc_id = _upload_document(client, "patch_resp_doc.pdf")
+        created = _create_question(client, user_id, doc_id, "Una pregunta")
+        question_id = created["id"]
+
+        update_payload = {"respuesta": "Esta es la respuesta"}
+        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}", json=update_payload)
+
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data is not None
+        assert data["respuesta"] == "Esta es la respuesta"
+
+    def test_update_question_not_found_returns_404(self, client):
+        """Updating a non-existent question returns 404 RFC9457 problem detail."""
+        invalid_id = 99999
+        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}", json={"pregunta": "New text"})
+
+        data = _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
+        assert "not found" in data["detail"].lower()
+
+
+@pytest.mark.contract
+class TestGetQuestionDetail:
+    """Contract tests for GET /api/v1/pregunta/<id> (retrieve single question)."""
+
+    def test_get_question_success(self, client):
+        """Retrieving an existing question returns 200 and question data."""
+        user_id = _create_user(client, "get_user@example.com", "Get User")
+        doc_id = _upload_document(client, "get_doc.pdf")
+        created = _create_question(client, user_id, doc_id, "Get pregunta")
+        question_id = created["id"]
+
+        resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+
+        assert resp.status_code == 200
+        assert resp.content_type == "application/json"
+        data = resp.get_json()
+        assert data is not None
+        assert data["id"] == question_id
+        assert data["pregunta"] == "Get pregunta"
+        assert data["user_id"] == user_id
+        assert data["document_id"] == doc_id
+
+    def test_get_question_not_found_returns_404(self, client):
+        """Retrieving a non-existent question returns 404 RFC9457 problem detail."""
+        invalid_id = 99999
+        resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
+
+        data = _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
+        assert "not found" in data["detail"].lower()
+
+
+@pytest.mark.contract
+class TestDeleteQuestion:
+    """Contract tests for DELETE /api/v1/pregunta/<id> (delete question)."""
+
+    def test_delete_question_success(self, client):
+        """Deleting an existing question returns 204 (No Content)."""
+        user_id = _create_user(client, "delete_user@example.com", "Delete User")
+        doc_id = _upload_document(client, "delete_doc.pdf")
+        created = _create_question(client, user_id, doc_id, "Question to delete")
+        question_id = created["id"]
+
+        # Verify the question exists
+        resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        assert resp.status_code == 200
+
+        # Delete the question
+        delete_resp = client.delete(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        assert delete_resp.status_code == 204
+
+        # Verify it's gone
+        check_resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        assert check_resp.status_code == 404
+
+    def test_delete_question_not_found_returns_404(self, client):
+        """Deleting a non-existent question returns 404 RFC9457 problem detail."""
+        invalid_id = 99999
+        resp = client.delete(f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
+
+        data = _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
+        assert "not found" in data["detail"].lower()
     """Contract tests for PATCH /api/v1/pregunta/{id} (update pregunta/respuesta)."""
 
     def test_update_question_and_answer_success(self, client):
