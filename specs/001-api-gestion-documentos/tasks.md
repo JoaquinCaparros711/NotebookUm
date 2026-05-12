@@ -215,7 +215,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [ ] T082 [#378](https://github.com/JoaquinCaparros711/NotebookUm/issues/378) [US5] Crear blueprint de preguntas en app/routes/questions.py con todos los endpoints CRUD
 - [x] T083 [#379](https://github.com/JoaquinCaparros711/NotebookUm/issues/379) [US5] Registrar blueprint de preguntas en app/__init__.py
 - [ ] T084 [#380](https://github.com/JoaquinCaparros711/NotebookUm/issues/380) [US5] Agregar verificaciones de autorización para todas las operaciones de preguntas
-- [ ] T085 [#381](https://github.com/JoaquinCaparros711/NotebookUm/issues/381) [US5] Agregar validación para creación de preguntas (campos requeridos)
+- [x] T085 [#381](https://github.com/JoaquinCaparros711/NotebookUm/issues/381) [US5] Agregar validación para creación de preguntas (campos requeridos)
 - [x] T086 [#382](https://github.com/JoaquinCaparros711/NotebookUm/issues/382) [US5] Ejecutar todas las pruebas de Historia de Usuario 5: `uv run pytest tests/contract/test_questions_api.py -v`
 
 **Punto de control**: En este punto, la Historia de Usuario 5 debería ser completamente funcional - los usuarios pueden gestionar su historial de preguntas
