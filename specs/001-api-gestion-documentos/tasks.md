@@ -210,7 +210,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T077 [#373](https://github.com/JoaquinCaparros711/NotebookUm/issues/373) [US5] Crear modelo HistorialPregunta en app/models/question.py (id, usuario_id, documento_id, pregunta, respuesta, created_at con relaciones)
 - [x] T078 [#374](https://github.com/JoaquinCaparros711/NotebookUm/issues/374) [US5] Crear migración Alembic para tabla historial_preguntas
 - [ ] T079 [#375](https://github.com/JoaquinCaparros711/NotebookUm/issues/375) [US5] Ejecutar migración: `uv run alembic upgrade head`
-- [ ] T080 [#376](https://github.com/JoaquinCaparros711/NotebookUm/issues/376) [US5] Crear QuestionService en app/services/question_service.py (métodos crear, listar, actualizar, eliminar)
+- [x] T080 [#376](https://github.com/JoaquinCaparros711/NotebookUm/issues/376) [US5] Crear QuestionService en app/services/question_service.py (métodos crear, listar, actualizar, eliminar)
 - [ ] T081 [#377](https://github.com/JoaquinCaparros711/NotebookUm/issues/377) [US5] Escribir pruebas unitarias para QuestionService en tests/unit/test_services.py
 - [ ] T082 [#378](https://github.com/JoaquinCaparros711/NotebookUm/issues/378) [US5] Crear blueprint de preguntas en app/routes/questions.py con todos los endpoints CRUD
 - [ ] T083 [#379](https://github.com/JoaquinCaparros711/NotebookUm/issues/379) [US5] Registrar blueprint de preguntas en app/__init__.py
