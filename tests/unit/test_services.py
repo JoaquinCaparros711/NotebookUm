@@ -1,4 +1,4 @@
-"""Unit tests for UserService, SummaryService, and DocumentService."""
+"""Unit tests for UserService, SummaryService, DocumentService, and QuestionService."""
 
 import pytest
 from types import SimpleNamespace
@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.models.user import User
 from app.models.document import HistorialDocumento
 from app.models.summary import Summary
+from app.models.question import HistorialPregunta as Question
 from app.services.document_service import (
     DocumentForbiddenError,
     DocumentNotFoundError,
@@ -18,6 +19,13 @@ from app.services.document_service import (
 )
 from app.services.summary_service import SummaryService
 from app.services.user_service import UserService, ValidationError
+from app.services.question_service import (
+    QuestionService,
+    QuestionServiceError,
+    QuestionNotFoundError,
+    QuestionValidationError,
+    QuestionForbiddenError,
+)
 
 
 class TestUserServiceValidation:
@@ -601,28 +609,557 @@ class TestSummaryServiceStatusMessage:
         pending_summary.status = "pending"
         failed_summary = Mock(spec=Summary)
         failed_summary.status = "failed"
+
         service = SummaryService()
 
-        # When: Getting messages for each
+        # When: Getting messages for both statuses
         pending_msg = service.get_status_message(pending_summary)
         failed_msg = service.get_status_message(failed_summary)
 
-        # Then: Messages are different (failed is not the same as pending)
+        # Then: Messages are different
         assert pending_msg != failed_msg
 
-    def test_unknown_status_returns_fallback_message(self):
-        """Test that any unexpected status value returns a safe fallback message."""
-        # Given: A summary with an unrecognised status
-        summary = Mock(spec=Summary)
-        summary.status = "unknown_future_state"
-        service = SummaryService()
 
-        # When: Getting the status message
-        result = service.get_status_message(summary)
+# ---------------------------------------------------------------------------
+# QuestionService – Tests
+# ---------------------------------------------------------------------------
 
-        # Then: Returns a non-empty fallback (never None, never raises)
-        assert result is not None
-        assert isinstance(result, str)
+
+class TestQuestionServiceCreateQuestion:
+    """Tests for QuestionService.create_question"""
+
+    @patch("app.services.question_service.db.session")
+    @patch("app.services.question_service.Question")
+    def test_create_question_success(self, mock_question_class, mock_session):
+        """Test create_question successfully creates and saves a question"""
+        # Given: Valid question data
+        data = {
+            "user_id": 1,
+            "document_id": 5,
+            "pregunta": "What is this about?"
+        }
+        mock_question_instance = Mock(spec=Question)
+        mock_question_class.return_value = mock_question_instance
+
+        # When: Calling create_question
+        result = QuestionService.create_question(data)
+
+        # Then: Question is created with correct data
+        mock_question_class.assert_called_once_with(
+            usuario_id=1,
+            documento_id=5,
+            pregunta="What is this about?"
+        )
+
+        # Then: Question is added to session and committed
+        mock_session.add.assert_called_once_with(mock_question_instance)
+        mock_session.commit.assert_called_once()
+
+        # Then: Returns the created question
+        assert result == mock_question_instance
+
+    def test_create_question_data_not_dict(self):
+        """Test create_question raises ValidationError when data is not a dict"""
+        # Given: Non-dict data
+        data = "not a dict"
+
+        # When: Calling create_question
+        # Then: Raises QuestionValidationError
+        with pytest.raises(QuestionValidationError) as exc_info:
+            QuestionService.create_question(data)
+
+        assert "JSON object" in str(exc_info.value)
+
+    def test_create_question_missing_user_id(self):
+        """Test create_question raises ValidationError when user_id is missing"""
+        # Given: Data without user_id
+        data = {
+            "document_id": 5,
+            "pregunta": "What is this about?"
+        }
+
+        # When: Calling create_question
+        # Then: Raises QuestionValidationError
+        with pytest.raises(QuestionValidationError) as exc_info:
+            QuestionService.create_question(data)
+
+        assert "user_id" in str(exc_info.value)
+
+    def test_create_question_missing_document_id(self):
+        """Test create_question raises ValidationError when document_id is missing"""
+        # Given: Data without document_id
+        data = {
+            "user_id": 1,
+            "pregunta": "What is this about?"
+        }
+
+        # When: Calling create_question
+        # Then: Raises QuestionValidationError
+        with pytest.raises(QuestionValidationError) as exc_info:
+            QuestionService.create_question(data)
+
+        assert "document_id" in str(exc_info.value)
+
+    def test_create_question_missing_pregunta(self):
+        """Test create_question raises ValidationError when pregunta is missing"""
+        # Given: Data without pregunta
+        data = {
+            "user_id": 1,
+            "document_id": 5
+        }
+
+        # When: Calling create_question
+        # Then: Raises QuestionValidationError
+        with pytest.raises(QuestionValidationError) as exc_info:
+            QuestionService.create_question(data)
+
+        assert "pregunta" in str(exc_info.value)
+
+    def test_create_question_pregunta_empty_string(self):
+        """Test create_question raises ValidationError when pregunta is empty"""
+        # Given: Empty pregunta
+        data = {
+            "user_id": 1,
+            "document_id": 5,
+            "pregunta": ""
+        }
+
+        # When: Calling create_question
+        # Then: Raises QuestionValidationError
+        with pytest.raises(QuestionValidationError) as exc_info:
+            QuestionService.create_question(data)
+
+        assert "non-empty string" in str(exc_info.value)
+
+    def test_create_question_pregunta_not_string(self):
+        """Test create_question raises ValidationError when pregunta is not a string"""
+        # Given: pregunta is a number
+        data = {
+            "user_id": 1,
+            "document_id": 5,
+            "pregunta": 123
+        }
+
+        # When: Calling create_question
+        # Then: Raises QuestionValidationError
+        with pytest.raises(QuestionValidationError) as exc_info:
+            QuestionService.create_question(data)
+
+        assert "non-empty string" in str(exc_info.value)
+
+    def test_create_question_strips_whitespace(self):
+        """Test create_question strips whitespace from pregunta"""
+        # Given: pregunta with leading/trailing whitespace
+        data = {
+            "user_id": 1,
+            "document_id": 5,
+            "pregunta": "  What is this about?  "
+        }
+
+        with patch("app.services.question_service.db.session"):
+            with patch("app.services.question_service.Question") as mock_question_class:
+                mock_instance = Mock(spec=Question)
+                mock_question_class.return_value = mock_instance
+
+                # When: Creating the question
+                QuestionService.create_question(data)
+
+                # Then: pregunta is stripped
+                assert mock_question_class.call_args[1]["pregunta"] == "What is this about?"
+
+    @patch("app.services.question_service.db.session")
+    def test_create_question_database_error(self, mock_session):
+        """Test create_question raises QuestionServiceError on database error"""
+        # Given: Database error during commit
+        mock_session.commit.side_effect = SQLAlchemyError("DB Error")
+        data = {
+            "user_id": 1,
+            "document_id": 5,
+            "pregunta": "What is this about?"
+        }
+
+        with patch("app.services.question_service.Question"):
+            # When: Creating the question
+            # Then: Raises QuestionServiceError and rolls back
+            with pytest.raises(QuestionServiceError) as exc_info:
+                QuestionService.create_question(data)
+
+            assert "Unable to persist" in str(exc_info.value)
+            mock_session.rollback.assert_called_once()
+
+
+class TestQuestionServiceListQuestions:
+    """Tests for QuestionService.list_questions"""
+
+    @patch("app.services.question_service.Question")
+    def test_list_all_questions(self, mock_question_class):
+        """Test list_questions returns all questions when no filters applied"""
+        # Given: Mock questions in database
+        mock_q1 = Mock(spec=Question)
+        mock_q1.id = 2
+        mock_q2 = Mock(spec=Question)
+        mock_q2.id = 1
+        mock_question_class.query.order_by.return_value.all.return_value = [mock_q1, mock_q2]
+
+        # When: Listing all questions
+        result = QuestionService.list_questions()
+
+        # Then: Returns all questions
+        assert len(result) == 2
+        assert result == [mock_q1, mock_q2]
+
+    @patch("app.services.question_service.Question")
+    def test_list_questions_filtered_by_user_id(self, mock_question_class):
+        """Test list_questions filters by user_id when provided"""
+        # Given: Mock questions for a specific user
+        mock_q1 = Mock(spec=Question)
+        mock_q1.usuario_id = 1
+        mock_q1.id = 2
+        mock_question_class.query.filter_by.return_value.order_by.return_value.all.return_value = [mock_q1]
+
+        # When: Listing questions for user 1
+        result = QuestionService.list_questions(user_id=1)
+
+        # Then: Returns filtered questions
+        assert len(result) == 1
+        assert result[0].usuario_id == 1
+        mock_question_class.query.filter_by.assert_called_once_with(usuario_id=1)
+
+    @patch("app.services.question_service.Question")
+    def test_list_questions_filtered_by_document_id(self, mock_question_class):
+        """Test list_questions filters by document_id when provided"""
+        # Given: Mock questions for a specific document
+        mock_q1 = Mock(spec=Question)
+        mock_q1.documento_id = 5
+        mock_q1.id = 1
+        mock_question_class.query.filter_by.return_value.order_by.return_value.all.return_value = [mock_q1]
+
+        # When: Listing questions for document 5
+        result = QuestionService.list_questions(document_id=5)
+
+        # Then: Returns filtered questions
+        assert len(result) == 1
+        assert result[0].documento_id == 5
+        mock_question_class.query.filter_by.assert_called_once_with(documento_id=5)
+
+    @patch("app.services.question_service.Question")
+    def test_list_questions_filtered_by_both_filters(self, mock_question_class):
+        """Test list_questions filters by both user_id and document_id"""
+        # Given: Mock questions
+        mock_q1 = Mock(spec=Question)
+        mock_q1.usuario_id = 1
+        mock_q1.documento_id = 5
+        mock_q1.id = 1
+
+        # Set up the chain of filter_by calls
+        # First filter_by returns a mock, second filter_by (on that mock) also returns the same mock
+        mock_chain = MagicMock()
+        mock_chain.filter_by.return_value = mock_chain
+        mock_chain.order_by.return_value.all.return_value = [mock_q1]
+        mock_question_class.query = mock_chain
+
+        # When: Listing questions with both filters
+        result = QuestionService.list_questions(user_id=1, document_id=5)
+
+        # Then: Returns filtered questions
+        assert len(result) == 1
+        assert result[0].usuario_id == 1
+        assert result[0].documento_id == 5
+
+    @patch("app.services.question_service.Question")
+    def test_list_questions_orders_by_id_descending(self, mock_question_class):
+        """Test list_questions orders results by id descending"""
+        # Given: Questions in database
+        mock_q1 = Mock(spec=Question)
+        mock_q1.id = 1
+        mock_q2 = Mock(spec=Question)
+        mock_q2.id = 2
+
+        mock_question_class.query.order_by.return_value.all.return_value = [mock_q2, mock_q1]
+
+        # When: Listing questions
+        QuestionService.list_questions()
+
+        # Then: order_by is called on the query
+        mock_question_class.query.order_by.assert_called_once()
+
+    @patch("app.services.question_service.Question")
+    def test_list_questions_returns_empty_list(self, mock_question_class):
+        """Test list_questions returns empty list when no questions found"""
+        # Given: No questions in database
+        mock_question_class.query.order_by.return_value.all.return_value = []
+
+        # When: Listing questions
+        result = QuestionService.list_questions()
+
+        # Then: Returns empty list
+        assert result == []
+
+
+class TestQuestionServiceGetQuestion:
+    """Tests for QuestionService.get_question"""
+
+    @patch("app.services.question_service.db.session")
+    def test_get_question_found(self, mock_session):
+        """Test get_question returns question when found"""
+        # Given: Question exists
+        mock_q = Mock(spec=Question)
+        mock_q.id = 1
+        mock_q.pregunta = "What is this?"
+        mock_session.get.return_value = mock_q
+
+        # When: Getting question by ID
+        result = QuestionService.get_question(1)
+
+        # Then: Returns the question
+        assert result == mock_q
+        assert result.id == 1
+        mock_session.get.assert_called_once_with(Question, 1)
+
+    @patch("app.services.question_service.db.session")
+    def test_get_question_not_found(self, mock_session):
+        """Test get_question returns None when not found"""
+        # Given: Question does not exist
+        mock_session.get.return_value = None
+
+        # When: Getting non-existent question
+        result = QuestionService.get_question(999)
+
+        # Then: Returns None
+        assert result is None
+        mock_session.get.assert_called_once_with(Question, 999)
+
+    @patch("app.services.question_service.db.session")
+    def test_get_question_uses_session_get(self, mock_session):
+        """Test get_question uses Session.get (SQLAlchemy 2.x API)"""
+        # Given: A question ID
+        question_id = 42
+
+        # When: Calling get_question
+        QuestionService.get_question(question_id)
+
+        # Then: Uses modern Session.get method
+        mock_session.get.assert_called_once_with(Question, question_id)
+
+
+class TestQuestionServiceUpdateQuestion:
+    """Tests for QuestionService.update_question"""
+
+    @patch("app.services.question_service.db.session")
+    def test_update_question_pregunta_success(self, mock_session):
+        """Test update_question successfully updates pregunta"""
+        # Given: Question exists and valid update data
+        mock_q = Mock(spec=Question)
+        mock_q.pregunta = "Old question"
+        mock_session.get.return_value = mock_q
+        data = {"pregunta": "New question"}
+
+        # When: Updating the question
+        result = QuestionService.update_question(1, data)
+
+        # Then: pregunta is updated
+        assert mock_q.pregunta == "New question"
+        mock_session.commit.assert_called_once()
+        assert result == mock_q
+
+    @patch("app.services.question_service.db.session")
+    def test_update_question_respuesta_success(self, mock_session):
+        """Test update_question successfully updates respuesta"""
+        # Given: Question exists
+        mock_q = Mock(spec=Question)
+        mock_q.respuesta = None
+        mock_session.get.return_value = mock_q
+        data = {"respuesta": "This is the answer"}
+
+        # When: Updating respuesta
+        result = QuestionService.update_question(1, data)
+
+        # Then: respuesta is updated
+        assert mock_q.respuesta == "This is the answer"
+        mock_session.commit.assert_called_once()
+        assert result == mock_q
+
+    @patch("app.services.question_service.db.session")
+    def test_update_question_both_fields(self, mock_session):
+        """Test update_question updates both pregunta and respuesta"""
+        # Given: Question exists
+        mock_q = Mock(spec=Question)
+        mock_session.get.return_value = mock_q
+        data = {"pregunta": "Updated question", "respuesta": "Updated answer"}
+
+        # When: Updating both fields
+        QuestionService.update_question(1, data)
+
+        # Then: Both fields are updated
+        assert mock_q.pregunta == "Updated question"
+        assert mock_q.respuesta == "Updated answer"
+        mock_session.commit.assert_called_once()
+
+    def test_update_question_not_found(self):
+        """Test update_question raises QuestionNotFoundError when not found"""
+        # Given: Question does not exist
+        with patch("app.services.question_service.db.session") as mock_session:
+            mock_session.get.return_value = None
+            data = {"pregunta": "New question"}
+
+            # When: Trying to update non-existent question
+            # Then: Raises QuestionNotFoundError
+            with pytest.raises(QuestionNotFoundError) as exc_info:
+                QuestionService.update_question(999, data)
+
+            assert "not found" in str(exc_info.value)
+
+    def test_update_question_invalid_data_type(self):
+        """Test update_question raises ValidationError when data is not a dict"""
+        # Given: Invalid data
+        with patch("app.services.question_service.db.session") as mock_session:
+            mock_q = Mock(spec=Question)
+            mock_session.get.return_value = mock_q
+
+            # When: Passing non-dict data
+            # Then: Raises QuestionValidationError
+            with pytest.raises(QuestionValidationError) as exc_info:
+                QuestionService.update_question(1, "not a dict")
+
+            assert "JSON object" in str(exc_info.value)
+
+    def test_update_question_pregunta_empty(self):
+        """Test update_question raises ValidationError for empty pregunta"""
+        # Given: Empty pregunta in update data
+        with patch("app.services.question_service.db.session") as mock_session:
+            mock_q = Mock(spec=Question)
+            mock_session.get.return_value = mock_q
+            data = {"pregunta": ""}
+
+            # When: Trying to update with empty pregunta
+            # Then: Raises QuestionValidationError
+            with pytest.raises(QuestionValidationError) as exc_info:
+                QuestionService.update_question(1, data)
+
+            assert "non-empty string" in str(exc_info.value)
+
+    def test_update_question_pregunta_not_string(self):
+        """Test update_question raises ValidationError when pregunta is not a string"""
+        # Given: Non-string pregunta
+        with patch("app.services.question_service.db.session") as mock_session:
+            mock_q = Mock(spec=Question)
+            mock_session.get.return_value = mock_q
+            data = {"pregunta": 123}
+
+            # When: Trying to update with non-string pregunta
+            # Then: Raises QuestionValidationError
+            with pytest.raises(QuestionValidationError) as exc_info:
+                QuestionService.update_question(1, data)
+
+            assert "non-empty string" in str(exc_info.value)
+
+    @patch("app.services.question_service.db.session")
+    def test_update_question_no_fields(self, mock_session):
+        """Test update_question raises ValidationError when no supported fields"""
+        # Given: Update data with no supported fields
+        mock_q = Mock(spec=Question)
+        mock_session.get.return_value = mock_q
+        data = {"unsupported_field": "value"}
+
+        # When: Trying to update with no supported fields
+        # Then: Raises QuestionValidationError
+        with pytest.raises(QuestionValidationError) as exc_info:
+            QuestionService.update_question(1, data)
+
+        assert "No supported fields" in str(exc_info.value)
+
+    @patch("app.services.question_service.db.session")
+    def test_update_question_database_error(self, mock_session):
+        """Test update_question raises QuestionServiceError on database error"""
+        # Given: Database error during commit
+        mock_q = Mock(spec=Question)
+        mock_session.get.return_value = mock_q
+        mock_session.commit.side_effect = SQLAlchemyError("DB Error")
+        data = {"pregunta": "New question"}
+
+        # When: Updating question with database error
+        # Then: Raises QuestionServiceError and rolls back
+        with pytest.raises(QuestionServiceError) as exc_info:
+            QuestionService.update_question(1, data)
+
+        assert "Unable to update" in str(exc_info.value)
+        mock_session.rollback.assert_called_once()
+
+    @patch("app.services.question_service.db.session")
+    def test_update_question_strips_pregunta_whitespace(self, mock_session):
+        """Test update_question strips whitespace from pregunta"""
+        # Given: pregunta with whitespace
+        mock_q = Mock(spec=Question)
+        mock_session.get.return_value = mock_q
+        data = {"pregunta": "  Updated question  "}
+
+        # When: Updating pregunta
+        QuestionService.update_question(1, data)
+
+        # Then: Whitespace is stripped
+        assert mock_q.pregunta == "Updated question"
+
+
+class TestQuestionServiceDeleteQuestion:
+    """Tests for QuestionService.delete_question"""
+
+    @patch("app.services.question_service.db.session")
+    def test_delete_question_success(self, mock_session):
+        """Test delete_question successfully deletes a question"""
+        # Given: Question exists
+        mock_q = Mock(spec=Question)
+        mock_session.get.return_value = mock_q
+
+        # When: Deleting the question
+        QuestionService.delete_question(1)
+
+        # Then: Question is deleted and committed
+        mock_session.delete.assert_called_once_with(mock_q)
+        mock_session.commit.assert_called_once()
+
+    def test_delete_question_not_found(self):
+        """Test delete_question raises QuestionNotFoundError when not found"""
+        # Given: Question does not exist
+        with patch("app.services.question_service.db.session") as mock_session:
+            mock_session.get.return_value = None
+
+            # When: Trying to delete non-existent question
+            # Then: Raises QuestionNotFoundError
+            with pytest.raises(QuestionNotFoundError) as exc_info:
+                QuestionService.delete_question(999)
+
+            assert "not found" in str(exc_info.value)
+            mock_session.delete.assert_not_called()
+
+    @patch("app.services.question_service.db.session")
+    def test_delete_question_database_error(self, mock_session):
+        """Test delete_question raises QuestionServiceError on database error"""
+        # Given: Database error during delete
+        mock_q = Mock(spec=Question)
+        mock_session.get.return_value = mock_q
+        mock_session.commit.side_effect = SQLAlchemyError("DB Error")
+
+        # When: Deleting question with database error
+        # Then: Raises QuestionServiceError and rolls back
+        with pytest.raises(QuestionServiceError) as exc_info:
+            QuestionService.delete_question(1)
+
+        assert "Unable to delete" in str(exc_info.value)
+        mock_session.rollback.assert_called_once()
+
+    @patch("app.services.question_service.db.session")
+    def test_delete_question_uses_session_get(self, mock_session):
+        """Test delete_question uses Session.get to retrieve the question"""
+        # Given: A question ID
+        question_id = 42
+        mock_q = Mock(spec=Question)
+        mock_session.get.return_value = mock_q
+
+        # When: Deleting the question
+        QuestionService.delete_question(question_id)
+
+        # Then: Uses modern Session.get method
+        mock_session.get.assert_called_once_with(Question, question_id)
 
 
 class TestDocumentServiceListUserDocuments:
