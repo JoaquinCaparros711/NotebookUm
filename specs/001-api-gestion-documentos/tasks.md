@@ -213,7 +213,7 @@ Todas las rutas son relativas a la raíz del repositorio (`/Users/josejoaquincap
 - [x] T080 [#376](https://github.com/JoaquinCaparros711/NotebookUm/issues/376) [US5] Crear QuestionService en app/services/question_service.py (métodos crear, listar, actualizar, eliminar)
 - [ ] T081 [#377](https://github.com/JoaquinCaparros711/NotebookUm/issues/377) [US5] Escribir pruebas unitarias para QuestionService en tests/unit/test_services.py
 - [ ] T082 [#378](https://github.com/JoaquinCaparros711/NotebookUm/issues/378) [US5] Crear blueprint de preguntas en app/routes/questions.py con todos los endpoints CRUD
-- [ ] T083 [#379](https://github.com/JoaquinCaparros711/NotebookUm/issues/379) [US5] Registrar blueprint de preguntas en app/__init__.py
+- [x] T083 [#379](https://github.com/JoaquinCaparros711/NotebookUm/issues/379) [US5] Registrar blueprint de preguntas en app/__init__.py
 - [ ] T084 [#380](https://github.com/JoaquinCaparros711/NotebookUm/issues/380) [US5] Agregar verificaciones de autorización para todas las operaciones de preguntas
 - [ ] T085 [#381](https://github.com/JoaquinCaparros711/NotebookUm/issues/381) [US5] Agregar validación para creación de preguntas (campos requeridos)
 - [x] T086 [#382](https://github.com/JoaquinCaparros711/NotebookUm/issues/382) [US5] Ejecutar todas las pruebas de Historia de Usuario 5: `uv run pytest tests/contract/test_questions_api.py -v`
