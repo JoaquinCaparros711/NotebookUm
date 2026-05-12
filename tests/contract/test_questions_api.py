@@ -65,6 +65,7 @@ def _create_question(client, user_id, document_id, pregunta):
             "document_id": document_id,
             "pregunta": pregunta,
         },
+        headers={"X-User-ID": str(user_id)},
     )
     assert response.status_code == 201
     data = response.get_json()
@@ -98,7 +99,11 @@ class TestPostQuestions:
             "document_id": document_id,
             "pregunta": "¿Cuál es el propósito principal del documento?",
         }
-        resp = client.post(QUESTIONS_ENDPOINT, json=question_payload)
+        resp = client.post(
+            QUESTIONS_ENDPOINT,
+            json=question_payload,
+            headers={"X-User-ID": str(user_id)},
+        )
 
         assert resp.status_code == 201
         data = resp.get_json()
@@ -116,10 +121,49 @@ class TestPostQuestions:
         document_id = _upload_document(client, "doc_for_qval.pdf")
 
         invalid_payload = {"user_id": user_id, "document_id": document_id}
-        resp = client.post(QUESTIONS_ENDPOINT, json=invalid_payload)
+        resp = client.post(
+            QUESTIONS_ENDPOINT,
+            json=invalid_payload,
+            headers={"X-User-ID": str(user_id)},
+        )
 
         data = _assert_problem_details(resp, 400, "Bad Request", QUESTIONS_ENDPOINT)
         assert "pregunta" in data["detail"].lower()
+
+    def test_create_question_requires_x_user_id_header(self, client):
+        """Creating a question without X-User-ID header returns 400."""
+        user_id = _create_user(client, "noheader_q@example.com", "No Header")
+        document_id = _upload_document(client, "noheader_doc.pdf")
+
+        question_payload = {
+            "user_id": user_id,
+            "document_id": document_id,
+            "pregunta": "¿Puede hacerse sin header?",
+        }
+        resp = client.post(QUESTIONS_ENDPOINT, json=question_payload)
+
+        _assert_problem_details(resp, 400, "Bad Request", QUESTIONS_ENDPOINT)
+        assert "x-user-id" in resp.get_json()["detail"].lower()
+
+    def test_create_question_user_id_mismatch_returns_403(self, client):
+        """Creating a question with a different X-User-ID than payload user_id returns 403."""
+        owner_id = _create_user(client, "owner_mismatch@example.com", "Owner Mismatch")
+        other_id = _create_user(client, "other_mismatch@example.com", "Other Mismatch")
+        document_id = _upload_document(client, "mismatch_doc.pdf")
+
+        question_payload = {
+            "user_id": owner_id,
+            "document_id": document_id,
+            "pregunta": "Intento no autorizado",
+        }
+        resp = client.post(
+            QUESTIONS_ENDPOINT,
+            json=question_payload,
+            headers={"X-User-ID": str(other_id)},
+        )
+
+        _assert_problem_details(resp, 403, "Forbidden", QUESTIONS_ENDPOINT)
+        assert "does not match" in resp.get_json()["detail"].lower()
 
 
 @pytest.mark.contract
@@ -165,6 +209,13 @@ class TestGetQuestions:
         assert len(data) == 1
         assert all(q.get("document_id") == doc1_id for q in data)
 
+    def test_list_questions_requires_x_user_id_header(self, client):
+        """Listing questions without X-User-ID header returns 400."""
+        resp = client.get(QUESTIONS_ENDPOINT)
+
+        _assert_problem_details(resp, 400, "Bad Request", QUESTIONS_ENDPOINT)
+        assert "x-user-id" in resp.get_json()["detail"].lower()
+
 
 @pytest.mark.contract
 class TestPatchQuestion:
@@ -178,7 +229,11 @@ class TestPatchQuestion:
         question_id = created["id"]
 
         update_payload = {"pregunta": "Updated pregunta text"}
-        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}", json=update_payload)
+        resp = client.patch(
+            f"{QUESTION_DETAIL_ENDPOINT}/{question_id}",
+            json=update_payload,
+            headers={"X-User-ID": str(user_id)},
+        )
 
         assert resp.status_code == 200
         data = resp.get_json()
@@ -194,7 +249,11 @@ class TestPatchQuestion:
         question_id = created["id"]
 
         update_payload = {"respuesta": "Esta es la respuesta"}
-        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}", json=update_payload)
+        resp = client.patch(
+            f"{QUESTION_DETAIL_ENDPOINT}/{question_id}",
+            json=update_payload,
+            headers={"X-User-ID": str(user_id)},
+        )
 
         assert resp.status_code == 200
         data = resp.get_json()
@@ -204,10 +263,31 @@ class TestPatchQuestion:
     def test_update_question_not_found_returns_404(self, client):
         """Updating a non-existent question returns 404 RFC9457 problem detail."""
         invalid_id = 99999
-        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}", json={"pregunta": "New text"})
+        resp = client.patch(
+            f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}",
+            json={"pregunta": "New text"},
+            headers={"X-User-ID": "1"},
+        )
 
         data = _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
         assert "not found" in data["detail"].lower()
+
+    def test_update_question_forbidden_for_different_user(self, client):
+        """Only the question owner may update the resource."""
+        owner_id = _create_user(client, "owner_patch@example.com", "Owner Patch")
+        other_id = _create_user(client, "other_patch@example.com", "Other Patch")
+        doc_id = _upload_document(client, "other_patch_doc.pdf")
+        created = _create_question(client, owner_id, doc_id, "Pregunta privada")
+        question_id = created["id"]
+
+        resp = client.patch(
+            f"{QUESTION_DETAIL_ENDPOINT}/{question_id}",
+            json={"pregunta": "Intento no autorizado"},
+            headers={"X-User-ID": str(other_id)},
+        )
+
+        _assert_problem_details(resp, 403, "Forbidden", f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        assert "not allowed" in resp.get_json()["detail"].lower()
 
 
 @pytest.mark.contract
@@ -221,7 +301,10 @@ class TestGetQuestionDetail:
         created = _create_question(client, user_id, doc_id, "Get pregunta")
         question_id = created["id"]
 
-        resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        resp = client.get(
+            f"{QUESTION_DETAIL_ENDPOINT}/{question_id}",
+            headers={"X-User-ID": str(user_id)},
+        )
 
         assert resp.status_code == 200
         assert resp.content_type == "application/json"
@@ -235,10 +318,29 @@ class TestGetQuestionDetail:
     def test_get_question_not_found_returns_404(self, client):
         """Retrieving a non-existent question returns 404 RFC9457 problem detail."""
         invalid_id = 99999
-        resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
+        resp = client.get(
+            f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}",
+            headers={"X-User-ID": "1"},
+        )
 
         data = _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
         assert "not found" in data["detail"].lower()
+
+    def test_get_question_forbidden_for_different_user(self, client):
+        """Only the question owner may retrieve the resource."""
+        owner_id = _create_user(client, "owner_get@example.com", "Owner Get")
+        other_id = _create_user(client, "other_get@example.com", "Other Get")
+        doc_id = _upload_document(client, "other_get_doc.pdf")
+        created = _create_question(client, owner_id, doc_id, "Pregunta privada")
+        question_id = created["id"]
+
+        resp = client.get(
+            f"{QUESTION_DETAIL_ENDPOINT}/{question_id}",
+            headers={"X-User-ID": str(other_id)},
+        )
+
+        _assert_problem_details(resp, 403, "Forbidden", f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        assert "not authorized" in resp.get_json()["detail"].lower()
 
 
 @pytest.mark.contract
@@ -253,74 +355,49 @@ class TestDeleteQuestion:
         question_id = created["id"]
 
         # Verify the question exists
-        resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        resp = client.get(
+            f"{QUESTION_DETAIL_ENDPOINT}/{question_id}",
+            headers={"X-User-ID": str(user_id)},
+        )
         assert resp.status_code == 200
 
         # Delete the question
-        delete_resp = client.delete(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        delete_resp = client.delete(
+            f"{QUESTION_DETAIL_ENDPOINT}/{question_id}",
+            headers={"X-User-ID": str(user_id)},
+        )
         assert delete_resp.status_code == 204
 
         # Verify it's gone
-        check_resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        check_resp = client.get(
+            f"{QUESTION_DETAIL_ENDPOINT}/{question_id}",
+            headers={"X-User-ID": str(user_id)},
+        )
         assert check_resp.status_code == 404
 
     def test_delete_question_not_found_returns_404(self, client):
         """Deleting a non-existent question returns 404 RFC9457 problem detail."""
         invalid_id = 99999
-        resp = client.delete(f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
+        resp = client.delete(
+            f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}",
+            headers={"X-User-ID": "1"},
+        )
 
         data = _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/{invalid_id}")
         assert "not found" in data["detail"].lower()
-    """Contract tests for PATCH /api/v1/pregunta/{id} (update pregunta/respuesta)."""
 
-    def test_update_question_and_answer_success(self, client):
-        """PATCH updates pregunta and respuesta and returns 200 with updated resource."""
-        user_id = _create_user(client, "patch_user@example.com", "Patch User")
-        document_id = _upload_document(client, "patch_doc.pdf")
-        question = _create_question(client, user_id, document_id, "Pregunta inicial")
-        question_id = question["id"]
+    def test_delete_question_forbidden_for_different_user(self, client):
+        """Only the question owner may delete the resource."""
+        owner_id = _create_user(client, "owner_delete@example.com", "Owner Delete")
+        other_id = _create_user(client, "other_delete@example.com", "Other Delete")
+        doc_id = _upload_document(client, "other_delete_doc.pdf")
+        created = _create_question(client, owner_id, doc_id, "Pregunta privada")
+        question_id = created["id"]
 
-        patch_payload = {"pregunta": "Pregunta actualizada", "respuesta": "Respuesta generada"}
-        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}", json=patch_payload)
+        resp = client.delete(
+            f"{QUESTION_DETAIL_ENDPOINT}/{question_id}",
+            headers={"X-User-ID": str(other_id)},
+        )
 
-        assert resp.status_code == 200
-        assert resp.content_type == "application/json"
-        data = resp.get_json()
-        assert data is not None
-        assert data.get("id") == question_id
-        assert data.get("pregunta") == "Pregunta actualizada"
-        assert data.get("respuesta") == "Respuesta generada"
-        assert data.get("user_id") == user_id
-        assert data.get("document_id") == document_id
-        assert "updated_at" in data
-
-    def test_update_nonexistent_question_returns_404(self, client):
-        """PATCH to a non-existent question id returns 404 RFC 9457 problem detail."""
-        resp = client.patch(f"{QUESTION_DETAIL_ENDPOINT}/999999", json={"pregunta": "x"})
-
-        _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/999999")
-
-
-@pytest.mark.contract
-class TestDeleteQuestion:
-    """Contract tests for DELETE /api/v1/pregunta/{id} (deletion)."""
-
-    def test_delete_question_success(self, client):
-        """DELETE removes the question and returns 204 No Content."""
-        user_id = _create_user(client, "del_user@example.com", "Del User")
-        document_id = _upload_document(client, "del_doc.pdf")
-        question = _create_question(client, user_id, document_id, "Pregunta a eliminar")
-        question_id = question["id"]
-
-        resp = client.delete(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
-
-        assert resp.status_code in (200, 204)
-
-        get_resp = client.get(f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
-        assert get_resp.status_code == 404
-
-    def test_delete_nonexistent_question_returns_404(self, client):
-        """DELETE to a non-existent question returns 404 RFC 9457 problem detail."""
-        resp = client.delete(f"{QUESTION_DETAIL_ENDPOINT}/999999")
-
-        _assert_problem_details(resp, 404, "Not Found", f"{QUESTION_DETAIL_ENDPOINT}/999999")
+        _assert_problem_details(resp, 403, "Forbidden", f"{QUESTION_DETAIL_ENDPOINT}/{question_id}")
+        assert "not allowed" in resp.get_json()["detail"].lower()

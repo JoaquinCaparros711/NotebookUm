@@ -29,7 +29,7 @@ class QuestionForbiddenError(QuestionServiceError):
 
 class QuestionService:
     @staticmethod
-    def create_question(data: Dict[str, Any]) -> Question:
+    def create_question(data: Dict[str, Any], user_id: Optional[int] = None) -> Question:
         if not isinstance(data, dict):
             raise QuestionValidationError("Request body must be a JSON object.")
 
@@ -37,6 +37,9 @@ class QuestionService:
         for f in required:
             if f not in data:
                 raise QuestionValidationError(f"Missing required field: {f}")
+
+        if user_id is not None and int(data["user_id"]) != user_id:
+            raise QuestionForbiddenError("X-User-ID does not match the authenticated user.")
 
         if not isinstance(data["pregunta"], str) or not data["pregunta"].strip():
             raise QuestionValidationError("Field 'pregunta' must be a non-empty string.")
@@ -68,10 +71,13 @@ class QuestionService:
         return db.session.get(Question, question_id)
 
     @staticmethod
-    def update_question(question_id: int, data: Dict[str, Any]) -> Question:
+    def update_question(question_id: int, data: Dict[str, Any], user_id: Optional[int] = None) -> Question:
         q = db.session.get(Question, question_id)
         if q is None:
             raise QuestionNotFoundError(f"Question with ID {question_id} not found")
+
+        if user_id is not None and q.usuario_id != user_id:
+            raise QuestionForbiddenError("You are not allowed to modify this question.")
 
         if not isinstance(data, dict):
             raise QuestionValidationError("Request body must be a JSON object.")
@@ -98,10 +104,14 @@ class QuestionService:
         return q
 
     @staticmethod
-    def delete_question(question_id: int) -> None:
+    def delete_question(question_id: int, user_id: Optional[int] = None) -> None:
         q = db.session.get(Question, question_id)
         if q is None:
             raise QuestionNotFoundError(f"Question with ID {question_id} not found")
+
+        if user_id is not None and q.usuario_id != user_id:
+            raise QuestionForbiddenError("You are not allowed to delete this question.")
+
         try:
             db.session.delete(q)
             db.session.commit()
