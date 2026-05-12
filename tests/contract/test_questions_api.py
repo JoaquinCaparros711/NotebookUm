@@ -130,6 +130,20 @@ class TestPostQuestions:
         data = _assert_problem_details(resp, 400, "Bad Request", QUESTIONS_ENDPOINT)
         assert "pregunta" in data["detail"].lower()
 
+    def test_create_question_missing_document_id_returns_400(self, client):
+        """Missing 'document_id' field must return a 400 RFC9457 problem detail."""
+        user_id = _create_user(client, "qval_doc@example.com", "Q Doc Validator")
+
+        invalid_payload = {"user_id": user_id, "pregunta": "¿Mensaje sin documento?"}
+        resp = client.post(
+            QUESTIONS_ENDPOINT,
+            json=invalid_payload,
+            headers={"X-User-ID": str(user_id)},
+        )
+
+        data = _assert_problem_details(resp, 400, "Bad Request", QUESTIONS_ENDPOINT)
+        assert "document_id" in data["detail"].lower()
+
     def test_create_question_requires_x_user_id_header(self, client):
         """Creating a question without X-User-ID header returns 400."""
         user_id = _create_user(client, "noheader_q@example.com", "No Header")
