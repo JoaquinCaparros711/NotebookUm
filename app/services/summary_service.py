@@ -194,9 +194,9 @@ class SummaryService:
         """Call OpenAI Responses API for summary generation."""
         language_name = "Spanish" if language == "es" else "English"
         try:
-            response = self.client.responses.create(  # type: ignore[union-attr]
+            completion = self.client.chat.completions.create(  # type: ignore[union-attr]
                 model=self.model,
-                input=[
+                messages=[
                     {
                         "role": "system",
                         "content": (
@@ -210,7 +210,11 @@ class SummaryService:
                     },
                 ],
             )
-            output_text = getattr(response, "output_text", "") or ""
+            output_text = ""
+            try:
+                output_text = completion.choices[0].message.content or ""
+            except Exception:
+                output_text = ""
             return str(output_text).strip()
         except Exception:
             return ""
