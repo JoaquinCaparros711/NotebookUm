@@ -6,6 +6,9 @@ services:
 
         command: --default-authentication-plugin=mysql_native_password
 
+        ports:
+            - "3308:3306"
+
         networks:
             - notebookum-network
         labels:
