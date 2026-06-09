@@ -1,0 +1,24 @@
+services:
+  consul:
+    image: hashicorp/consul:1.16
+    container_name: consul
+    restart: unless-stopped
+    command: >
+      agent -server -bootstrap-expect=1 -ui
+      -client=0.0.0.0 -bind=0.0.0.0
+    ports:
+      - "8500:8500"
+    networks:
+      notebookum-network:
+        aliases:
+          - consul.universidad.localhost
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.consul-ui.rule=Host(`consul.universidad.localhost`)"
+      - "traefik.http.routers.consul-ui.entryPoints=https"
+      - "traefik.http.routers.consul-ui.tls=true"
+      - "traefik.http.services.consul-ui.loadbalancer.server.port=8500"
+
+networks:
+  notebookum-network:
+    external: true

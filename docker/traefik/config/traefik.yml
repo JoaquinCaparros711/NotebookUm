@@ -11,6 +11,12 @@ providers:
     watch: true
     exposedByDefault: false
 
+  consulCatalog:
+    endpoint:
+      address: http://consul:8500
+    exposedByDefault: false
+    refreshInterval: 15s
+
   file:
     filename: /etc/traefik/config.yml
     watch: true
